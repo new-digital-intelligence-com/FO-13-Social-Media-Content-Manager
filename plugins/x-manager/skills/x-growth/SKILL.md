@@ -3,6 +3,13 @@ name: x-growth
 description: Find X accounts to follow by topic and follow or unfollow them in bulk with review. Use when the user wants account suggestions in a niche, asks who to follow on X, wants to grow their audience, or wants to prune who they follow.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../x/references/artifact.md](../x/references/artifact.md).
+
 # X growth
 
 Unlike Instagram, X **does** expose following: `TWITTER_FOLLOW_USER` and

@@ -3,6 +3,13 @@ name: instagram-growth
 description: Find Instagram accounts to follow by topic, and understand what Instagram allows around following. Use when the user wants account suggestions in a niche, asks who to follow, wants to grow their audience, or asks why following cannot be automated on Instagram.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram growth
 
 ## Following cannot be automated on Instagram

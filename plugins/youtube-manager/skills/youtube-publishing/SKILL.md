@@ -3,6 +3,13 @@ name: youtube-publishing
 description: Upload videos to YouTube and manage their metadata - titles, descriptions, tags, thumbnails, privacy and categories. Use when the user wants to upload, publish, schedule, retitle, rewrite a description, change a thumbnail, or delete a video.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../youtube/references/artifact.md](../youtube/references/artifact.md).
+
 # YouTube publishing
 
 ## Confirm before every write, and default to private

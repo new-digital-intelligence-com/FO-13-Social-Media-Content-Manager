@@ -3,6 +3,13 @@ name: instagram-content
 description: Browse, search and audit existing Instagram posts, carousels, stories and live media. Use when the user wants to list recent posts, find a specific post, review captions or hashtags, check what is currently live or in stories, or audit their content library.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram content
 
 Read the account's existing library. Everything here is read-only and safe to

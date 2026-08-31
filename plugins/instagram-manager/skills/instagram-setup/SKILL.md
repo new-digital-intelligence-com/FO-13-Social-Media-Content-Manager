@@ -3,6 +3,13 @@ name: instagram-setup
 description: Connect an Instagram account to Composio and diagnose Instagram auth problems. Use when the user needs to link or relink Instagram, sees an authorization or permission error, gets empty results from valid calls, or asks whether their account type is supported.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram setup
 
 Get an Instagram Business or Creator account connected through Composio, and fix

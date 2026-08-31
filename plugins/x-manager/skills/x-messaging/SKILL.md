@@ -3,6 +3,13 @@ name: x-messaging
 description: Read and send X direct messages, including group conversations. Use when the user wants to check DMs, reply to someone, start a conversation, or delete a message on X.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../x/references/artifact.md](../x/references/artifact.md).
+
 # X messaging
 
 DMs are private and sent as the account. A wrong DM cannot be recalled.

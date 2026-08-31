@@ -3,6 +3,13 @@ name: x-lists
 description: Create and curate X lists - create, update, delete, add or remove members, follow, pin, and read a list's timeline. Use when the user wants to organise accounts into lists or read from one.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../x/references/artifact.md](../x/references/artifact.md).
+
 # X lists
 
 Lists are the cheapest way to follow a topic without following accounts.

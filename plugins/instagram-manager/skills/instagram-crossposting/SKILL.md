@@ -3,6 +3,13 @@ name: instagram-crossposting
 description: Publish or schedule one piece of content to Instagram and other platforms in a single call, with per-platform wording. Use when the user wants to post the same thing to Instagram and YouTube, X, TikTok, LinkedIn or elsewhere at once, asks to cross-post, or wants one caption adapted per network.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Cross-posting from Instagram
 
 One payload, several platforms, one queue slot. **Zernio-only** — Composio is

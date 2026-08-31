@@ -83,6 +83,12 @@ and these skills are its backend. Do not publish an artifact per question:
 find the existing studio, refresh the part the user asked about, and republish
 it to the same URL.
 
+**Build or update it for every substantive answer**, not only long ones. An
+empty queue, a failed fetch and a missing connector are all states the studio
+draws — "nothing scheduled", "not loaded yet", "could not be read" — so a thin
+result is a reason to render it, never a reason to fall back to prose. Reply in
+text only for a single fact ("yes, Instagram is connected") or in a terminal.
+
 Start from [references/content-studio.html](references/content-studio.html);
 the rules and the `DATA` contract are in
 [references/artifact.md](references/artifact.md).

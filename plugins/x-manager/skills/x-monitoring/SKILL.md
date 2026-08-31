@@ -3,6 +3,13 @@ name: x-monitoring
 description: Search X and track performance - recent and full-archive search, volume counts, monitoring a handle or keyword, and post analytics. Use when the user wants to find posts, watch mentions or a topic, measure reach, or compare how posts performed.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../x/references/artifact.md](../x/references/artifact.md).
+
 # X monitoring
 
 ## There is no mentions endpoint

@@ -3,6 +3,13 @@ name: youtube-comments
 description: Read, reply to and moderate YouTube comments. Use when the user wants to see comments on a video or channel, reply to viewers, triage engagement, or moderate spam and abuse.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../youtube/references/artifact.md](../youtube/references/artifact.md).
+
 # YouTube comments
 
 ## Reading

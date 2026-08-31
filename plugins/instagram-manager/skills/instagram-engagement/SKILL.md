@@ -3,6 +3,13 @@ name: instagram-engagement
 description: Read, reply to, and moderate Instagram comments and mentions. Use when the user wants to see comments on a post, reply to followers, handle mentions, moderate or delete comments, or triage engagement across recent posts.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram engagement
 
 Comments and mentions are public and attributed to the account. Treat every

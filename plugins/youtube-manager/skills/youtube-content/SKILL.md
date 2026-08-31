@@ -3,6 +3,13 @@ name: youtube-content
 description: Work with YouTube video content - load transcripts, write summaries, chapters, descriptions and titles from what the video actually says, and repurpose a video into posts for Instagram or X. Use when the user asks what a video covers, wants chapters or a description written, or wants to turn a video into other content.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../youtube/references/artifact.md](../youtube/references/artifact.md).
+
 # YouTube content
 
 Everything here starts from the **transcript**. It is the only source that

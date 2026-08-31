@@ -3,6 +3,13 @@ name: instagram-publishing
 description: Publish content to Instagram - single images, videos, reels, stories and carousels. Use when the user wants to post, publish, upload, share, or schedule Instagram content, or asks about publishing limits, captions, hashtags, alt text, tagging or cover images.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram publishing
 
 Publishing is always **two steps**: create a container, then publish it.

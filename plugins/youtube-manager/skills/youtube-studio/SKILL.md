@@ -3,6 +3,13 @@ name: youtube-studio
 description: Turn a YouTube video into other content using its transcript - summaries, chapters, descriptions, titles, tags, and posts repurposed for Instagram or X. Use when the user asks what a video covers, wants chapters or a description written, wants titles or tags, or wants a video turned into posts for other platforms.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../youtube/references/artifact.md](../youtube/references/artifact.md).
+
 # YouTube studio
 
 Every task here is a transformation of the **transcript**. Load it first; see

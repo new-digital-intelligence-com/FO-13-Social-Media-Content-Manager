@@ -3,6 +3,13 @@ name: x-engagement
 description: Engage on X - like, unlike, repost, bookmark, hide replies, follow, unfollow, mute and unmute, and see who liked, reposted or quoted a post. Use when the user wants to interact with posts or manage who they follow or mute.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../x/references/artifact.md](../x/references/artifact.md).
+
 # X engagement
 
 ## Confirm before acting

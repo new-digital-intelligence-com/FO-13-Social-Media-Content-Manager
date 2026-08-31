@@ -3,6 +3,13 @@ name: youtube-analytics
 description: Read YouTube channel and video analytics - audience retention curves, demographics, daily views, follower history, best times to post, and how performance decays after publishing. Use when the user asks how a video performed, where viewers drop off, who is watching, when to post, or wants a channel performance report.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../youtube/references/artifact.md](../youtube/references/artifact.md).
+
 # YouTube analytics
 
 Two sources, and the split matters:

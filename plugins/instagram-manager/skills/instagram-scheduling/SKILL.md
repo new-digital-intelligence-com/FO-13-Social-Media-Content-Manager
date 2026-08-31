@@ -3,6 +3,13 @@ name: instagram-scheduling
 description: Schedule Instagram posts, manage the publishing queue, and keep a consistent posting cadence. Use when the user wants to schedule or queue a post, asks what is queued or going out next, wants to change or cancel a scheduled post, or asks whether they are posting often enough.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram scheduling
 
 ## Instagram has no scheduling API

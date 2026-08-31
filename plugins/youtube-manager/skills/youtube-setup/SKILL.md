@@ -3,6 +3,13 @@ name: youtube-setup
 description: Connect a YouTube channel to Composio and diagnose YouTube auth or quota problems. Use when the user needs to link YouTube, sees quotaExceeded, a 403, or asks why a YouTube call failed.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../youtube/references/artifact.md](../youtube/references/artifact.md).
+
 # YouTube setup
 
 YouTube **has a Composio-managed app**, so connecting is one step — no Google

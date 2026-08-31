@@ -3,6 +3,13 @@ name: x-setup
 description: Connect an X (Twitter) account to Composio and diagnose X auth problems. Use when the user needs to link X, hits a 403 or client-not-enrolled error, sees UsageCapExceeded, or asks why Twitter will not connect.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../x/references/artifact.md](../x/references/artifact.md).
+
 # X setup
 
 X is the awkward one. **Composio removed its managed Twitter credentials in

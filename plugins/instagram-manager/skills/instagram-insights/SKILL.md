@@ -3,6 +3,13 @@ name: instagram-insights
 description: Read Instagram analytics - reach, views, followers, engagement, saves, shares, profile taps, and audience demographics, for the account or an individual post. Use when the user asks how content performed, wants a report, compares posts, or asks about growth, audience or best posting time.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram insights
 
 Two levels: the account (`INSTAGRAM_GET_USER_INSIGHTS`) and a single post

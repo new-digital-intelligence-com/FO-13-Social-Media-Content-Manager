@@ -3,6 +3,13 @@ name: instagram-messaging
 description: Read and send Instagram direct messages, manage the DM inbox, and configure ice breakers. Use when the user wants to check DMs, reply to a customer, send a message or image in chat, mark a thread read, or set up automated greeting prompts.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram messaging
 
 Direct messages are private, one-to-one, and sent as the account. A wrong DM

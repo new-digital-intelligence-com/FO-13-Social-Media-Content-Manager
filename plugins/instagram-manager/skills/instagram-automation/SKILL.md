@@ -3,6 +3,13 @@ name: instagram-automation
 description: Set up and manage Instagram comment-to-DM and story-reply automations, and send private replies to commenters. Use when the user wants a keyword in comments to trigger an automatic DM, wants to answer story replies automatically, wants to DM someone who commented, or asks to review how an existing automation is performing.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram automation
 
 Keyword-triggered DMs, story-reply answers, and private replies to commenters.

@@ -3,6 +3,13 @@ name: instagram-monitoring
 description: Watch Instagram engagement and decide what needs a human - triage comments for questions, complaints and escalation keywords, and propose content ideas grounded in what actually performed. Use when the user asks what needs a reply, wants their comments triaged, asks how their content is doing, or wants ideas for what to post next.
 ---
 
+> **In the Claude app, render this into the Content Studio artifact.** There is
+> one studio for the whole toolkit — find it and update the relevant section,
+> never publish a second artifact. **An empty or unavailable result still goes in
+> the studio**: "nothing scheduled" and "could not be read" are states it draws,
+> not reasons to fall back to prose. Only in a terminal is a text answer right.
+> See [../instagram/references/artifact.md](../instagram/references/artifact.md).
+
 # Instagram monitoring
 
 ## There is no mentions feed
