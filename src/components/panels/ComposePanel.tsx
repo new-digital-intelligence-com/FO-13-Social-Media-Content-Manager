@@ -107,7 +107,7 @@ export function ComposePanel() {
   const ready =
     kind === "CAROUSEL" ? slides.filter(hasMedia).length >= 2 : hasMedia(media);
 
-  /** Queue instead of publishing: lands as unapproved, awaiting a human. */
+  /** Schedule on Zernio instead of publishing now. A time is the commitment. */
   async function addToQueue() {
     setBusy(true);
     setError(null);
@@ -117,10 +117,12 @@ export function ComposePanel() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          platform: "instagram",
           kind,
           caption,
           ...mediaPayload(media, needsVideo),
           publishAt: publishAt ? new Date(publishAt).toISOString() : null,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           children:
             kind === "CAROUSEL"
               ? slides.filter(hasMedia).map((s) => mediaPayload(s, false))
@@ -132,8 +134,8 @@ export function ComposePanel() {
       else
         setResult(
           publishAt
-            ? "Added to the queue. Approve it in the Queue tab and it will publish at the scheduled time."
-            : "Saved as a draft in the Queue tab.",
+            ? `Scheduled for ${new Date(publishAt).toLocaleString()}. It will publish automatically — you do not need to do anything else.`
+            : "Saved as a draft. It has no date, so it will not publish until you set one in the Queue tab.",
         );
     } catch {
       setError("Network error.");
@@ -454,11 +456,22 @@ export function ComposePanel() {
             />
           </label>
           <Button variant="ghost" onClick={addToQueue} disabled={!ready || busy}>
-            {publishAt ? "Add to queue" : "Save as draft"}
+            {publishAt ? "Schedule it" : "Save as draft"}
           </Button>
           <p className="w-full text-xs text-black/45">
-            Queued posts never publish on their own — you approve each one in the
-            Queue tab first.
+            {publishAt ? (
+              <>
+                <strong>This will publish on its own</strong> at the time above (
+                {Intl.DateTimeFormat().resolvedOptions().timeZone}). Zernio holds
+                it and fires it — the app does not need to be running. Leave the
+                date empty to save a draft instead.
+              </>
+            ) : (
+              <>
+                No date set, so this saves as a <strong>draft</strong> and will
+                not publish. Pick a time above to schedule it.
+              </>
+            )}
           </p>
         </div>
 
@@ -468,8 +481,10 @@ export function ComposePanel() {
               Publish this {KINDS.find((k) => k.id === kind)?.label.toLowerCase()} now?
             </p>
             <p className="text-sm text-black/60">
-              It becomes visible to your followers immediately and cannot be undone
-              from here.
+              It goes live on Instagram <strong>right now</strong> — visible to
+              your followers immediately, and there is no unsend. To publish
+              later instead, cancel and set a time under &ldquo;Schedule
+              for&rdquo; above.
             </p>
             <div className="flex gap-2">
               <Button onClick={publish} disabled={busy}>
@@ -482,7 +497,7 @@ export function ComposePanel() {
           </div>
         ) : (
           <Button onClick={() => setConfirming(true)} disabled={!ready || busy}>
-            Publish
+            Publish now
           </Button>
         )}
         {!ready && (

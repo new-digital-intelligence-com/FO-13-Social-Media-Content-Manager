@@ -89,11 +89,13 @@ original post's id. Surface the original; a duplicate upload also burns another
 
 ## When Zernio is unavailable
 
-Fall back to the app's queue if it is running (see
-[app-api.md](../youtube/references/app-api.md)), and say that it only fires
-while the app process is up. If neither can hold it, offer an immediate upload
-as `private` for the user to publish by hand — and be explicit that nothing is
-scheduled. Never claim a video is queued when no service is holding it.
+There is **no fallback** — the app's queue is Zernio, and the old local
+scheduler was removed. Nothing can be scheduled during an outage. Say that
+plainly, then offer an immediate upload as `private` for the user to publish by
+hand, and be explicit that nothing is scheduled. Never claim a video is queued
+when no service is holding it.
+
+Uploads already scheduled are safe: they are held on Zernio, not in this app.
 
 Never retry a failed upload blindly: the first attempt may have consumed quota
 and partly succeeded. Check the channel first.

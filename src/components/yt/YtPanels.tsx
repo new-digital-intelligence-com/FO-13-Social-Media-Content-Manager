@@ -211,9 +211,13 @@ export function YtUpload() {
   return (
     <Card className="space-y-4">
       <Note>
-        Uploads cost roughly 1,600 quota units of a default 10,000 per day —
-        about six uploads. Defaults to private so you can review before anyone
-        is notified.
+        <strong>This uploads immediately.</strong> There is no scheduling here —
+        the video goes to your channel as soon as you confirm, at the privacy you
+        pick below.
+        <br />
+        Each upload costs roughly 1,600 quota units of a default 10,000 per day —
+        about six uploads, and the quota resets daily on Pacific time. Defaults
+        to private so you can review before anyone is notified.
       </Note>
 
       <label className="block cursor-pointer rounded-xl border border-dashed border-black/20 px-4 py-6 text-center transition hover:border-brand/50 hover:bg-brand/[0.03]">
@@ -406,9 +410,9 @@ export function YtUpload() {
           onChange={(e) => setPrivacy(e.target.value)}
           className={inputClass}
         >
-          <option value="private">Private</option>
-          <option value="unlisted">Unlisted</option>
-          <option value="public">Public — notifies subscribers</option>
+          <option value="private">Private — only you can see it</option>
+          <option value="unlisted">Unlisted — anyone with the link, no notification</option>
+          <option value="public">Public — live on the channel, notifies subscribers</option>
         </select>
       </Field>
 
@@ -436,13 +440,18 @@ export function YtUpload() {
       {confirming ? (
         <div className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4">
           <p className="text-sm font-medium">
-            Upload &ldquo;{title}&rdquo; as {privacyStatus}?
+            Upload &ldquo;{title}&rdquo; to your channel as {privacyStatus}, now?
           </p>
-          {privacyStatus === "public" && (
-            <p className="text-sm text-black/60">
-              Public uploads notify your subscribers and that cannot be undone.
-            </p>
-          )}
+          <p className="text-sm text-black/60">
+            {privacyStatus === "public"
+              ? "It goes live immediately and notifies your subscribers. The notification cannot be recalled, even if you delete the video afterwards."
+              : privacyStatus === "unlisted"
+                ? "It will not appear on your channel or notify anyone, but anyone with the link can watch it."
+                : "Only you will be able to see it. You can make it public later from the Videos tab."}
+          </p>
+          <p className="text-xs text-black/50">
+            This spends about 1,600 quota units whichever privacy you choose.
+          </p>
           <div className="flex gap-2">
             <Button onClick={upload} disabled={busy}>
               {busy ? "Uploading…" : "Yes, upload"}
@@ -457,7 +466,7 @@ export function YtUpload() {
           onClick={() => setConfirming(true)}
           disabled={!file || !title.trim() || !description.trim() || busy}
         >
-          Upload
+          Upload now
         </Button>
       )}
     </Card>

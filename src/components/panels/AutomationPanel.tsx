@@ -22,7 +22,6 @@ export function AutomationPanel() {
 }
 
 type Settings = {
-  autoPublish: boolean;
   brandVoice: string;
   avoid: string;
   cadencePerWeek: number;
@@ -75,23 +74,18 @@ function BrandVoice() {
         </p>
       </div>
 
-      <label className="flex items-start gap-2.5 rounded-xl border border-black/10 p-4">
-        <input
-          type="checkbox"
-          className="mt-0.5"
-          checked={settings.autoPublish}
-          onChange={(e) => setSettings({ ...settings, autoPublish: e.target.checked })}
-        />
-        <span>
-          <span className="block text-sm font-medium">
-            Publish scheduled posts automatically
-          </span>
-          <span className="mt-0.5 block text-xs text-black/55">
-            Queued posts go out at their scheduled time with no further approval.
-            Turn this off to review each one before it publishes.
-          </span>
+      <div className="rounded-xl border border-black/10 bg-black/[0.02] p-4">
+        <span className="block text-sm font-medium">
+          Scheduled posts publish automatically
         </span>
-      </label>
+        <span className="mt-1 block text-xs text-black/55">
+          Scheduling runs on Zernio, which holds each post on its own servers and
+          fires it at its time — whether or not this app is running. A failed
+          post is retried three times before it is marked failed. There is no
+          approval step: <strong>setting a time is the approval</strong>. To
+          review something before it goes out, leave it as a draft with no date.
+        </span>
+      </div>
 
       <Field label="Voice" hint="How the account should sound.">
         <textarea

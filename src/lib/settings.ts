@@ -16,9 +16,7 @@ export type Settings = {
    * Publish queued posts at their scheduled time without a per-post approval.
    * The queue decision becomes the approval.
    */
-  autoPublish: boolean;
   /** Minutes between background scheduler ticks. */
-  schedulerIntervalMinutes: number;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -37,8 +35,6 @@ export const DEFAULT_SETTINGS: Settings = {
     "never received",
     "wrong order",
   ],
-  autoPublish: true,
-  schedulerIntervalMinutes: 1,
 };
 
 export async function getSettings(): Promise<Settings> {

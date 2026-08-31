@@ -130,11 +130,12 @@ fail on any call**, and check before promising anything time-based.
 
 Work down it, and **say out loud which rung you landed on**:
 
-1. **Scheduling** → the Content Studio app's queue if it is running (see
-   [app-api.md](./app-api.md)). Weaker: it only fires while the app process is
-   up. State that difference rather than presenting it as equivalent.
-2. **Still nothing** → offer an immediate upload through Composio as `private`,
-   for the user to publish by hand later. Ask; do not pick for them.
+1. **Scheduling** → **there is no fallback.** The app's queue is Zernio; the
+   old local queue and its in-process timer were removed, because they only
+   published while the app happened to be running. If Zernio is unreachable,
+   nothing can be scheduled. Say that plainly.
+2. **Instead** → offer an immediate upload through Composio as `private`, for
+   the user to publish by hand later. Ask; do not pick for them.
 3. **Analytics** → Composio returns channel and video statistics (views, likes,
    comments). Retention curves, demographics, daily views, best-time and decay
    have **no** Composio equivalent — report them unavailable rather than

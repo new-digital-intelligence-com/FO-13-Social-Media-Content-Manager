@@ -113,13 +113,14 @@ export async function GET() {
     zernioHealth().catch(() => ({ state: "unavailable" as const, detail: "Probe failed." })),
   ]);
 
-  const pending = queue.filter((p) => p.status === "scheduled");
   return NextResponse.json({
     platforms: [ig, tw, yt],
     queue: {
-      scheduled: pending.length,
-      awaitingApproval: pending.filter((p) => !p.approved).length,
+      scheduled: queue.filter((p) => p.status === "scheduled").length,
       drafts: queue.filter((p) => p.status === "draft").length,
+      // The queue lives on Zernio, so it cannot be read during an outage.
+      // Zero here means nothing scheduled only when `zernio.state` is "ready".
+      available: zernio.state === "ready",
     },
     // Features backed by Zernio read this to disable themselves rather than
     // failing mid-action. `ready` is the only state where they are usable.

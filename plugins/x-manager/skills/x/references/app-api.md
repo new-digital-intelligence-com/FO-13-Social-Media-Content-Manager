@@ -28,7 +28,7 @@ capability is unavailable rather than implying the platform lacks it.
 
 ```
 GET  /api/status              connection state for every platform
-GET  /api/settings            brand voice, topics, cadence target, autoPublish
+GET  /api/settings            brand voice, topics, cadence target
 PUT  /api/settings            partial update
 GET  /api/accounts?platform=  connected accounts and which one is active
 POST /api/media               multipart file -> public URL

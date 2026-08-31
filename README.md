@@ -202,8 +202,6 @@ app keeps locally, so no Composio tool reaches them:
 
 | Capability | Why it is app-only |
 |---|---|
-| Publishing queue and scheduling | Instagram has no scheduling API; the queue is local |
-| Auto-publish and the background runner | Local setting plus a server-side timer |
 | Brand voice, escalation keywords, cadence target | Local settings |
 | Multi-account switching | Local choice of which connected account acts |
 | Media hosting | Cloudinary upload, to get a public URL |
@@ -215,12 +213,18 @@ The skills do not reimplement any of this. They drive the running app over HTTP
 is not running, those capabilities are unavailable in Claude Code**, and the
 skills are told to say so plainly rather than blame the platform's API.
 
-**Scheduling is the exception, and now prefers Zernio.** The local queue in
-`.data/` only fires while `npm run dev` is running and never retries; Zernio
-holds the post server-side, retries three times with exponential backoff, and
-supports recurring slots. The skills queue on Zernio first and drop to the app's
-queue only when Zernio is unreachable — saying which one they landed on. The
-app's Queue and Automation tabs are unchanged and still work.
+**Scheduling is not on that list any more — it moved to Zernio entirely.** The
+old local queue in `.data/` plus its in-process `setInterval` only published
+while `npm run dev` happened to be running, so a "scheduled" post silently
+missed its time whenever the app was down. `src/lib/scheduler.ts`,
+`src/lib/publish-queue.ts` and `POST /api/ig/schedule/run` are gone;
+`/api/ig/schedule` is now a view onto the Zernio queue, and the app's Queue tab
+reads and writes it.
+
+That trade is deliberate: **there is no second scheduler**, so an unreachable
+Zernio means nothing can be scheduled at all. The app says exactly that rather
+than pretending, and posts already scheduled are unaffected because they live on
+Zernio, not here.
 
 ## 2. Next.js app — direct UI + AI
 
@@ -292,9 +296,11 @@ controls to match.
 - **No bio, name, website or profile-picture editing.** Meta's Graph API exposes
   no endpoint for it, for any tool. The Overview tab shows the bio read-only and
   can draft a new one for you to paste into the app.
-- **No native scheduling.** Instagram publishes immediately. The Queue and
-  Automation tabs are the app's own scheduler on top of `.data/`, not an
-  Instagram feature — which is why they exist only in the app.
+- **No native scheduling.** Instagram publishes immediately. The Queue tab is a
+  view onto Zernio, which holds the post and fires it — not an Instagram
+  feature. Setting a time *is* the approval; a post with no date stays a draft
+  and never publishes. There is no approval checkbox and no auto-publish toggle
+  any more: both belonged to the local scheduler that was removed.
 - **Expired stories are unreachable.** Only currently-active stories return.
 
 ### Why meta-tools instead of preloaded tools
@@ -413,12 +419,18 @@ integration is built around that rather than assuming uptime.
   a timeout so an unreachable Zernio cannot hang the page that called it.
   `GET /api/status` reports `zernio.state` as `ready`, `unconfigured`,
   `unavailable` or `error`; features read it and disable themselves rather than
-  failing mid-action.
-- **The skills state which rung they landed on.** Scheduling falls back to the
-  app's local queue (weaker: only fires while the app is up — the skills say
-  so). Analytics falls back to Composio's shallower numbers, explicitly
-  labelled. Automations, private replies and cross-posting have **no** fallback
-  and are reported unavailable rather than approximated.
+  failing mid-action. Verified by pointing `ZERNIO_BASE_URL` at a dead host:
+  the queue returns `available: false` with a reason, a schedule attempt is
+  refused with 503, and Instagram, X and YouTube all still render connected.
+- **An unreadable queue is never shown as an empty one.** `available: false`
+  means we could not ask, not that nothing is scheduled — the UI renders a
+  distinct state, because "nothing scheduled" during an outage would be a lie.
+- **The skills state which rung they landed on.** Scheduling has **no**
+  fallback — the app's queue *is* Zernio — so an outage means nothing can be
+  scheduled, and the skills say that instead of implying a post is held
+  somewhere. Analytics falls back to Composio's shallower numbers, explicitly
+  labelled. Automations, private replies and cross-posting are reported
+  unavailable rather than approximated.
 - **The failure is read, not retried blindly.** 401 is re-authorize, 403
   `ACCOUNT_DISCONNECTED` is reconnect, 409 is a content-hash duplicate that
   surfaces the original post, 429 backs off, 5xx and timeouts mean outage. A

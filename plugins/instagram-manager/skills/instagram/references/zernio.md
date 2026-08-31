@@ -131,18 +131,21 @@ Read the failure, then act:
 
 Work down it, and **say out loud which rung you landed on**:
 
-1. **Scheduling** → the Content Studio app's own queue
-   (`POST /api/ig/schedule`, see [app-api.md](./app-api.md)) if the app is
-   running. It is a weaker queue — it only fires while the app process is up —
-   so state that difference rather than presenting it as equivalent.
-2. **Still nothing** → offer to publish immediately through Composio instead, or
-   to hold the draft until Zernio is back. Ask; do not pick for them.
+1. **Scheduling** → **there is no fallback.** The app's queue is Zernio; the
+   old local `.data/` queue and its in-process timer were removed, because they
+   only published while `npm run dev` happened to be running. If Zernio is
+   unreachable, nothing can be scheduled, full stop. Say that plainly.
+2. **Instead** → offer to publish immediately through Composio, or to keep the
+   draft until Zernio is back. Ask which; do not pick for them.
 3. **Analytics** → Composio's own Instagram insights cover per-post and account
    metrics. Best-time, content-decay and frequency-vs-engagement have **no**
    Composio equivalent — report them as unavailable rather than approximating.
 4. **Automations, private replies, cross-posting** → no fallback exists. Say the
    capability is Zernio-only and currently unavailable, and offer the manual
    equivalent (triage via `instagram-monitoring`, one platform at a time).
+
+Posts **already** scheduled are unaffected by an outage: they live on Zernio's
+side, not in this app. Do not tell a user their queued posts are at risk.
 
 **Never**: claim a post is scheduled when no service is holding it; retry a
 failed publish blindly, since the first attempt may have partly succeeded; or

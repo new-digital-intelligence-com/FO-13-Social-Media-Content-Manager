@@ -1,10 +1,9 @@
 /**
- * Runs once when the server starts. Used to bring up the background publisher
- * so scheduled posts fire without anyone having the app open.
+ * Runs once when the server starts.
+ *
+ * Deliberately empty: scheduling moved to Zernio, which fires posts on its own
+ * servers. The previous in-process timer only published while this process was
+ * alive, so a "scheduled" post silently missed its time whenever the app was
+ * not running.
  */
-export async function register() {
-  // Guard against the edge runtime, where timers and the file store are absent.
-  if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { startScheduler } = await import("./lib/scheduler");
-  await startScheduler();
-}
+export async function register() {}

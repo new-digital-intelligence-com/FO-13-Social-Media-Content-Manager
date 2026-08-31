@@ -14,17 +14,18 @@ expire in under 24 hours, so creating one early is not a scheduling mechanism.
 
 Something has to hold the post until its time. Two things can:
 
-| | Zernio (preferred) | Content Studio app |
-|---|---|---|
-| Holds the post | On Zernio's servers | In `.data/` on this machine |
-| Fires when | Always | Only while `npm run dev` is running |
-| On failure | 3 retries, exponential backoff, webhook | Nothing; it sits |
-| Recurring slots | Yes, queue slots per profile | No, one time per post |
-| Needs | Zernio connector authorized | The app running on localhost |
+**Zernio holds it.** It keeps the post on its own servers, fires it at the slot
+time, and retries three times with exponential backoff. The app does not need to
+be running.
 
-**Prefer Zernio.** Fall back to the app's queue only when Zernio is
-unreachable, and say so when you do. Full contract and error handling:
-[references/zernio.md](../instagram/references/zernio.md).
+The Content Studio app used to keep its own `.data/` queue driven by an
+in-process timer. That is gone: it only published while `npm run dev` happened
+to be running, so a "scheduled" post silently missed its time whenever the app
+was down. The app's Queue tab now reads and writes Zernio.
+
+**So there is no second scheduler.** If Zernio is unreachable, nothing can be
+scheduled — say so rather than implying a post is held somewhere. Full contract
+and error handling: [references/zernio.md](../instagram/references/zernio.md).
 
 ## Queue a post on Zernio
 
@@ -77,33 +78,33 @@ If the same caption and media already went to this account within 24 hours,
 Zernio rejects it (409) with the original post's id. Show the user the original
 and ask — do not tweak the caption to force a duplicate through.
 
-## Falling back to the app's queue
+## Through the app instead
 
-When Zernio is unreachable, the app's queue is the weaker substitute, and only
-if the app is running:
+The app's Queue tab is a view onto the same Zernio queue, so either route works
+and both show the same posts:
 
 ```
-POST /api/ig/schedule
-{ "kind": "IMAGE", "caption": "...", "imageUrl": "https://...",
-  "publishAt": "2026-09-02T18:00:00.000Z" }
+GET    /api/ig/schedule?platform=instagram   posts + counts, and `available`
+POST   /api/ig/schedule                      {caption, mediaUrl, publishAt|useQueue, timezone}
+PATCH  /api/ig/schedule                      {id, publishAt}  — null returns it to a draft
+DELETE /api/ig/schedule?id=
 ```
 
-`kind` is `IMAGE`, `REELS`, `STORIES` or `CAROUSEL`; `publishAt` null saves a
-draft.
+**`available: false` is not an empty queue.** It means Zernio could not be read,
+so what is scheduled is unknown. Never report "nothing scheduled" from it.
 
-Read `GET /api/ig/schedule/run` before promising anything:
+There is no approval step and no `/api/ig/schedule/run` — both are gone.
+Setting a time *is* the approval; a post with no date stays a draft and never
+publishes.
 
-- **`autoPublish: true`** — it fires at its time unattended. Queueing *is* the
-  approval.
-- **`autoPublish: false`** — it waits until approved, however overdue.
+## When Zernio is unreachable
 
-`scheduler.active` and `lastRunAt` tell you whether the runner is alive. If it
-is not, due posts will sit there — flag it.
+Nothing can be scheduled — there is no second queue to fall back to. Say that
+plainly, then offer the two things that still work: publish now through
+Composio, or keep it as a draft until Zernio returns. Ask which; do not choose.
 
-**Tell the user they are on the fallback**, and that it only fires while the app
-is up. If neither Zernio nor the app can hold the post, say plainly that nothing
-is scheduled, and offer either to publish now or to keep the draft until Zernio
-returns. Do not imply a post is queued when nothing is holding it.
+Posts already scheduled are safe — they are held on Zernio, not in this app.
+Do not tell the user their queue is at risk.
 
 ## Cadence
 
