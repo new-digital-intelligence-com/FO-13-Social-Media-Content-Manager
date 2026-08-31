@@ -1,9 +1,9 @@
 # socialmedia
 
-Social media management for **Instagram** and **X (Twitter)**, in two forms:
-**Claude Code plugins** (skills you invoke with `/instagram` or `/x`) and a
-**Next.js app** (a full UI plus its own agent). Each platform shares one
-behaviour contract across both surfaces.
+Social media management for **Instagram**, **X (Twitter)** and **YouTube**, in
+two forms: **Claude Code plugins** (skills you invoke with `/instagram`, `/x` or
+`/youtube`) and a **Next.js app** (a full UI plus its own agent). Each platform
+shares one behaviour contract across both surfaces.
 
 ## Setup — pick your path
 
@@ -17,6 +17,7 @@ the other. Read the path you need.
 /plugin marketplace add https://github.com/<you>/socialmedia
 /plugin install instagram-manager
 /plugin install x-manager
+/plugin install youtube-manager
 ```
 
 Then, once:
@@ -29,9 +30,13 @@ Then, once:
 2. **Connect Instagram.** Ask Claude to connect Instagram, or run `/instagram`.
    It returns a Connect Link; authorize a **Business or Creator** account.
 
+All three plugins ship the **same** `.mcp.json`, so you authorize Composio once,
+not once per plugin. Authorizing Composio and connecting an account are separate
+steps: repeat step 2 for each platform you want.
+
 That is the whole setup. This path uses **Composio For You**, which authenticates
-through your browser — there is no `COMPOSIO_API_KEY`, no `.env.local`, and no
-Groq key, because Claude itself is the model.
+through your browser — there is no `COMPOSIO_API_KEY`, no `.env.local` and no
+model key, because Claude itself is the model.
 
 ### Path B · The web app — API keys in `.env.local`
 
@@ -45,17 +50,22 @@ cp .env.example .env.local     # then fill it in
 npm run dev                    # http://localhost:3000
 ```
 
-`.env.local` needs four values:
+`.env.local` needs these:
 
 | Variable | Where it comes from | Why |
 |---|---|---|
 | `COMPOSIO_API_KEY` | [Dashboard](https://dashboard.composio.dev) → **Platform** → your project → Settings → API keys. Starts `ak_`. | Server-side tool execution |
 | `COMPOSIO_TEST_USER_ID` | Written by `composio dev init`, or any stable string | Composio scopes connections per user |
-| `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys). Starts `gsk_`. | The app brings its own model; Claude is not in the loop |
-| `GROQ_MODEL` | `openai/gpt-oss-120b` | Tool-capable model on Groq |
+| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) → API keys. Starts `sk-ant-`. | The app runs its own agent; the Claude Code session is not in the loop |
+| `ANTHROPIC_MODEL` | `claude-haiku-4-5` (default), or `claude-sonnet-5` for harder work | The model the app's agent uses |
+| `CLOUD_NAME`, `CLOUD_API_KEY`, `CLOUD_API_SECRET` | [cloudinary.com](https://cloudinary.com) → Dashboard | Media hosting. An Instagram Reel cover and a YouTube thumbnail accept a **public URL only**, with no file equivalent, so those two need it |
 
-Then open the app and click **Connect Instagram** — it returns a Connect Link
-for a Business or Creator account.
+Three more are optional and documented in `.env.example`: `IG_LOOKUP_*` for
+Instagram handle verification in the Grow tab (leave blank and suggestions stay
+unverified), and `WEB_SEARCH` / `WEB_SEARCH_TOOL_TYPE` for account discovery.
+
+Then open the app and click **Connect** on a platform — it returns a Connect
+Link. Instagram requires a Business or Creator account.
 
 > **Reveal the key before copying.** The dashboard shows it masked, and
 > `composio dev init` on CLI 0.4.0 can persist the masked form (`ak_…**zVAo`),
@@ -94,7 +104,7 @@ fixable in code.
 | Composio product | For You | Platform |
 | Credential | Browser OAuth (`ck_`) | Project key (`ak_`) |
 | Where connections live | Your personal Composio account | The project, scoped to `COMPOSIO_TEST_USER_ID` |
-| Model | Claude | Groq |
+| Model | Claude, no key needed | Claude, your `ANTHROPIC_API_KEY` |
 | Needs Node / `.env` | No | Yes |
 
 If you use both, authorize Instagram once per path. That is a property of
@@ -102,10 +112,11 @@ Composio's two products, not a bug here.
 
 ### What stays identical across both
 
-`plugins/instagram-manager/skills/instagram/references/rules.md` is the single
-behaviour contract. Claude loads it through the `instagram` skill; the app reads
-the same file into its system prompt (`src/lib/skills.ts`). Change a rule once
-and both surfaces follow it.
+Each platform has one behaviour contract, at
+`plugins/<platform>-manager/skills/<platform>/references/rules.md`. Claude loads
+it through the router skill; the app reads **the same file off disk** into its
+system prompt (`src/lib/skills.ts`). Change a rule once and both surfaces follow
+it.
 
 ## 1. `plugins/instagram-manager` — Claude Code plugin
 
@@ -119,17 +130,26 @@ plugins/instagram-manager/
     instagram/              router + shared rules + references/tools.md
     instagram-setup/        connect, verify account type, diagnose auth
     instagram-publishing/   images, reels, stories, carousels, quotas
+    instagram-scheduling/   the publishing queue, cadence, what goes out next
     instagram-insights/     account + post analytics, reporting rules
     instagram-engagement/   comments, replies, mentions, moderation
+    instagram-monitoring/   triage comments for questions, complaints, escalation
     instagram-messaging/    DMs, inbox triage, ice breakers
+    instagram-growth/       account discovery by topic, and why follows cannot
+                            be automated on Instagram
     instagram-content/      browse and audit the library
 ```
+
+The scheduling, monitoring and growth skills reach capabilities Instagram's API
+does not have — see [Some capabilities live only in the app](#some-capabilities-live-only-in-the-app).
 
 Install locally:
 
 ```
-/plugin marketplace add /home/helmi/Desktop/socialmedia
+/plugin marketplace add /path/to/this/repo
 /plugin install instagram-manager
+/plugin install x-manager
+/plugin install youtube-manager
 ```
 
 ### The plugin ships its own Composio connector
@@ -158,21 +178,53 @@ Every tool slug is verified against Composio toolkit `INSTAGRAM` (`20260819_00`)
 the skills route away from Meta's eight deprecated tools and require
 confirmation before anything public or irreversible.
 
+### Some capabilities live only in the app
+
+A few things are not platform API features at all — they are built on state the
+app keeps locally, so no Composio tool reaches them:
+
+| Capability | Why it is app-only |
+|---|---|
+| Publishing queue and scheduling | Instagram has no scheduling API; the queue is local |
+| Auto-publish and the background runner | Local setting plus a server-side timer |
+| Brand voice, escalation keywords, cadence target | Local settings |
+| Multi-account switching | Local choice of which connected account acts |
+| Media hosting | Cloudinary upload, to get a public URL |
+| Cadence measurement | Post history against a local target |
+
+The skills do not reimplement any of this. They drive the running app over HTTP
+(`CONTENT_STUDIO_URL`, default `http://localhost:3000`), checking
+`GET /api/status` first — see each plugin's `references/app-api.md`. **If the app
+is not running, those capabilities are unavailable in Claude Code**, and the
+skills are told to say so plainly rather than blame the platform's API.
+
 ## 2. Next.js app — direct UI + AI
 
-Landing page lists social platforms (only Instagram is wired; the rest show as
-not connected). Clicking Instagram opens a panel with eight tabs.
+The landing page lists all three platforms; each opens its own panel with a
+connect flow and a tab strip.
+
+| Platform | Tabs |
+|---|---|
+| Instagram | Overview, Posts, Reels, Stories, Messages, Insights, Compose, Queue, Monitor, Grow, Automation, Ask AI |
+| X | Overview, Compose, Timeline, Search, Lists, Grow, Messages, Ask AI |
+| YouTube | Overview, Videos, AI Studio, Upload, Comments, Playlists, Grow, Search, Ask AI |
 
 ```
 src/app/page.tsx                platform grid
-src/app/instagram/page.tsx      panel shell + connect flow
-src/components/panels/          Overview, Content, Messages, Insights, Compose, Chat
+src/app/{instagram,x,youtube}/  panel shell + connect flow per platform
+src/components/panels/          Overview, Content, Messages, Insights, Compose,
+                                Queue, Monitor, Automation, Chat
+src/components/{x,yt}/          per-platform panels; YtStudio is the transcript workbench
+src/components/GrowthPanel.tsx  shared Grow tab, parameterised by platform
 src/components/AiAssist.tsx     reusable "Ask AI" attached to every composer
 src/components/MediaInput.tsx   upload-or-URL media picker with preview
-src/lib/ig.ts                   typed tool execution + result unwrapping
-src/app/api/ig/*                manual actions (direct tool calls, no LLM)
+src/lib/{ig,x,yt}.ts            typed tool execution + result unwrapping
+src/lib/store.ts                JSON store under .data/ (queue, settings, selection)
+src/lib/cloudinary.ts           public-URL hosting for Reel covers + YT thumbnails
+src/app/api/{ig,x,yt}/*         manual actions (direct tool calls, no LLM)
 src/app/api/assist              AI writing help (tool-free, cheap)
-src/app/api/chat                agent loop (tools, for "Ask AI" tab)
+src/app/api/{chat,x/chat,yt/chat}  agent loop (tools, for each "Ask AI" tab)
+src/app/api/status              connection state for every platform
 ```
 
 Every feature works two ways: **manually** through the UI (deterministic direct
@@ -215,13 +267,15 @@ controls to match.
 - **No bio, name, website or profile-picture editing.** Meta's Graph API exposes
   no endpoint for it, for any tool. The Overview tab shows the bio read-only and
   can draft a new one for you to paste into the app.
-- **No native scheduling.** Publishing is immediate; a scheduler would need your
-  own job store.
+- **No native scheduling.** Instagram publishes immediately. The Queue and
+  Automation tabs are the app's own scheduler on top of `.data/`, not an
+  Instagram feature — which is why they exist only in the app.
 - **Expired stories are unreachable.** Only currently-active stories return.
 
 ### Why meta-tools instead of preloaded tools
 
-Groq's free tier allows **8,000 tokens/min**. Measured:
+The pattern was forced by the original model provider's **8,000 tokens/min** cap.
+Measured then:
 
 | Config | Tokens |
 |---|---|
@@ -229,9 +283,16 @@ Groq's free tier allows **8,000 tokens/min**. Measured:
 | Meta-tools with sandbox enabled | 6,614 |
 | **Meta-tools, sandbox disabled** | **3,529** |
 
-So the agent loop uses `sandbox: { enable: false }` and discovers tools at
-runtime. The manual UI routes bypass the LLM entirely, so they cost nothing
-against this budget. Tuning lives in `TOKEN_BUDGET` in `src/lib/composio.ts`.
+That cap is gone — the app now runs on Claude Haiku 4.5 with a 200K context
+window — but the pattern stayed, because it keeps prompts small and lets **one
+session serve any toolkit** rather than preloading three platforms' schemas. So
+the agent loop still uses `sandbox: { enable: false }` and discovers tools at
+runtime via `COMPOSIO_SEARCH_TOOLS` / `COMPOSIO_GET_TOOL_SCHEMAS`. The manual UI
+routes bypass the LLM entirely and cost nothing. Tuning lives in `TOKEN_BUDGET`
+in `src/lib/composio.ts`.
+
+> Haiku 4.5 predates adaptive thinking and `output_config.effort`; both are
+> rejected on this model, so neither is set anywhere in the app.
 
 ## 3. `plugins/x-manager` + `/x` — X (Twitter)
 
@@ -245,6 +306,7 @@ plugins/x-manager/skills/
   x-posting/      posts, threads, replies, quotes, media, polls
   x-engagement/   like, repost, bookmark, hide replies, follow, mute
   x-monitoring/   recent + archive search, counts, analytics
+  x-growth/       account discovery by topic, bulk follow/unfollow with review
   x-lists/        create and curate lists
   x-messaging/    DMs including group conversations
 ```
@@ -257,7 +319,45 @@ Two X limits the UI states rather than hides: **there is no mentions endpoint**
 (monitoring a handle means searching for it), and **recent search only reaches
 about 7 days** on most plans, so "no results" means "none in that window".
 
-## 4. `scripts/` — Python verification harness
+## 4. `plugins/youtube-manager` + `/youtube` — YouTube
+
+```
+plugins/youtube-manager/skills/
+  youtube/             router + rules.md + references/tools.md
+  youtube-setup/       connect a channel, decode quota and 403 errors
+  youtube-publishing/  uploads, titles, descriptions, tags, thumbnails, privacy
+  youtube-content/     transcript-driven summaries, chapters, repurposing
+  youtube-studio/      the same workbench as the app's AI Studio tab
+  youtube-comments/    read, reply, moderate
+  youtube-growth/      playlists, subscriptions, search, trending
+```
+
+App tabs: Overview, Videos, AI Studio, Upload, Comments, Playlists, Grow,
+Search, Ask AI.
+
+**Transcripts are the point.** `YOUTUBE_LIST_CAPTION_TRACK` then
+`YOUTUBE_LOAD_CAPTIONS` gives the actual words in a video, and the rules forbid
+describing, summarising, chaptering or repurposing a video from its title and
+thumbnail. With no caption track, both surfaces work from metadata and say so
+rather than guessing. AI Studio turns a transcript into chapters, descriptions,
+titles, tags — and into Instagram or X posts.
+
+Three YouTube constraints the surfaces state rather than hide:
+
+- **Quota is metered in units, not requests**, and writes cost far more than
+  reads — an upload is ~1600 against a default 10,000/day. Composio's shared
+  managed OAuth app splits that quota across users, so it runs out sooner than
+  expected; a dedicated Google Cloud OAuth app gets its own. Quota resets daily
+  on Pacific time, so `quotaExceeded` is wait-or-upgrade, never retry-in-a-loop.
+- **Ids are not interchangeable.** Channel, video, playlist and playlist *item*
+  ids are four different things — removing a video from a playlist takes the
+  playlist item id.
+- **Uploads default to `private`** unless you explicitly ask to publish.
+
+A YouTube thumbnail is URL-only (`thumbnailUrl` has no file equivalent), which
+is one of the two reasons the app needs Cloudinary.
+
+## 5. `scripts/` — Python verification harness
 
 Proved the connection before any app code existed. Still the quickest way to
 test one tool call:
@@ -274,6 +374,15 @@ test one tool call:
   server-side.
 - **Comment and DM tools may need Meta permissions** the Composio-managed OAuth
   app does not carry; production needs your own Meta app.
+- **X requires your own developer app** — Composio removed managed Twitter
+  credentials in February 2026 — and gates endpoints by plan tier.
+- **YouTube is quota-limited, not rate-limited.** Budget in units per day, not
+  requests per minute.
+- **The app is single-user by construction.** `COMPOSIO_TEST_USER_ID` is read
+  from the environment, `.data/` is one global JSON store, and there is no auth
+  layer — fine on localhost, not on a public URL. `getSession(user)`,
+  `getXSession(user)` and `getYtSession(user)` already take a user id, so
+  multi-user means adding auth and threading the real id through.
 - **`composio dev init` (CLI 0.4.0) wrote a masked API key** (`ak_…**zVAo`).
   `src/lib/composio.ts` and `scripts/composio_session.py` both fail fast on a
   masked or short key rather than surfacing an opaque 401.
