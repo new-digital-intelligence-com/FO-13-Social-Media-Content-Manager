@@ -19,11 +19,14 @@ type Task =
 export function AiAssist({
   task,
   context,
+  platform,
   placeholder,
   onInsert,
 }: {
   task: Task;
   context?: string;
+  /** Retargets the task's rules; without it the prompt stays Instagram-shaped. */
+  platform?: "instagram" | "youtube" | "x";
   placeholder?: string;
   onInsert: (text: string) => void;
 }) {
@@ -41,7 +44,7 @@ export function AiAssist({
       const res = await fetch("/api/assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task, prompt, context }),
+        body: JSON.stringify({ task, prompt, context, platform }),
       });
       const data = await res.json();
       if (!res.ok) setError(data.error);

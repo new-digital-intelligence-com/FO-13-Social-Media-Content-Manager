@@ -16,6 +16,7 @@ import {
   YtVideos,
 } from "@/components/yt/YtPanels";
 import { Button, ErrorNote, Tabs } from "@/components/ui";
+import { ZernioAnalytics } from "@/components/panels/ZernioAnalytics";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -24,6 +25,7 @@ const TABS = [
   { id: "upload", label: "Upload" },
   { id: "comments", label: "Comments" },
   { id: "playlists", label: "Playlists" },
+  { id: "analytics", label: "Analytics" },
   { id: "grow", label: "Grow" },
   { id: "search", label: "Search" },
   { id: "ai", label: "Ask AI" },
@@ -132,6 +134,7 @@ export default function YouTubePanel() {
           {tab === "comments" && <YtComments />}
           {tab === "playlists" && <YtPlaylists />}
           {tab === "search" && <YtSearch />}
+          {tab === "analytics" && <ZernioAnalytics platform="youtube" />}
           {tab === "grow" && <GrowthPanel platform="youtube" />}
           {tab === "ai" && (
             <PlatformChat

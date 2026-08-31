@@ -2,6 +2,67 @@ import { VIDEO_PARTS, ytExecute, ytRoute } from "@/lib/yt";
 
 export const runtime = "nodejs";
 
+/**
+ * `YOUTUBE_LIST_CHANNEL_VIDEOS` returns **playlistItem** resources, whose `id`
+ * is the playlist-item id — not the video id. Passing that straight through
+ * means every downstream consumer (AI Studio, details, captions) looks up an id
+ * that does not exist and gets "Video not found".
+ *
+ * The real id lives at `snippet.resourceId.videoId`, so hoist it into `id` and
+ * keep the original as `playlistItemId` for playlist removal, which genuinely
+ * needs it.
+ */
+async function withStatistics(data: unknown) {
+  const items =
+    Array.isArray(data) ? data : ((data as { items?: unknown[] } | null)?.items ?? null);
+  if (!Array.isArray(items) || items.length === 0) return data;
+
+  const ids = items
+    .map((i) => (i as { id?: string }).id)
+    .filter((id): id is string => typeof id === "string");
+  if (ids.length === 0) return data;
+
+  // Best-effort: a failed statistics lookup must not blank the video list.
+  const details = await ytExecute("YOUTUBE_GET_VIDEO_DETAILS_BATCH", {
+    id: ids.join(","),
+    parts: "statistics",
+  }).catch(() => null);
+
+  const raw = details?.data as { items?: unknown[] } | unknown[] | undefined;
+  const rows = Array.isArray(raw) ? raw : (raw?.items ?? []);
+  const byId = new Map(
+    (rows as { id?: string; statistics?: unknown }[]).map((v) => [v.id, v.statistics]),
+  );
+
+  const merged = items.map((raw2) => {
+    const item = raw2 as { id?: string };
+    const stats = item.id ? byId.get(item.id) : undefined;
+    return stats ? { ...item, statistics: stats } : item;
+  });
+  return Array.isArray(data) ? merged : { ...(data as object), items: merged };
+}
+
+function normalizeUploads(data: unknown) {
+  const items =
+    Array.isArray(data)
+      ? data
+      : ((data as { items?: unknown[] } | null)?.items ?? null);
+  if (!Array.isArray(items)) return data;
+
+  const fixed = items.map((raw) => {
+    const item = raw as {
+      id?: unknown;
+      snippet?: { resourceId?: { videoId?: string } };
+    };
+    const videoId = item.snippet?.resourceId?.videoId;
+    if (!videoId) return item;
+    return { ...item, id: videoId, playlistItemId: item.id };
+  });
+
+  return Array.isArray(data) ? fixed : { ...(data as object), items: fixed };
+}
+
+
 /** ?id= one video (with rating) · else the channel's uploads. */
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
@@ -24,7 +85,11 @@ export async function GET(request: Request) {
       part: "snippet",
       maxResults: max,
     });
-    return { videos: r.data, note: r.note };
+    const videos = normalizeUploads(r.data);
+    // playlistItems cannot carry `statistics` — that part only exists on the
+    // videos resource — so the list card's "N views" was permanently dead.
+    // One batch lookup over the normalized ids fills it in.
+    return { videos: await withStatistics(videos), note: r.note };
   });
 }
 

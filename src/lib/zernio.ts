@@ -190,6 +190,8 @@ export async function zernio<T>(
 export type ZernioAccount = {
   _id: string;
   platform: string;
+  /** The platform's own user/channel id, for identity comparison. */
+  platformUserId?: string;
   username?: string;
   displayName?: string;
   isActive?: boolean;
@@ -209,7 +211,13 @@ export type ZernioAccount = {
 export type ZernioHealth = {
   state: "ready" | "unconfigured" | "unavailable" | "error";
   detail?: string;
-  accounts?: { platform: string; handle?: string; accountId: string; active: boolean }[];
+  accounts?: {
+    platform: string;
+    handle?: string;
+    accountId: string;
+    platformUserId?: string;
+    active: boolean;
+  }[];
   profileId?: string;
 };
 
@@ -226,11 +234,18 @@ export async function zernioHealth(force = false): Promise<ZernioHealth> {
   const ttl = cache?.value.state === "ready" ? OK_TTL : FAIL_TTL;
   if (!force && cache && Date.now() - cache.at < ttl) return cache.value;
 
-  const res = await zernio<{ accounts: ZernioAccount[] }>("/accounts", {
-    method: "GET",
-    // Shorter than the default: this probe gates a page render.
-    timeoutMs: 8000,
-  });
+  // A cold server's first outbound TLS handshake can be far slower than a warm
+  // one, and a single slow probe must not be reported as an outage — that puts
+  // a false "Zernio is down" in front of the user. So a transport failure is
+  // retried once, on a longer budget, before it counts.
+  const probe = () =>
+    zernio<{ accounts: ZernioAccount[] }>("/accounts", {
+      method: "GET",
+      timeoutMs: 12000,
+    });
+
+  let res = await probe();
+  if (!res.ok && res.failure.kind === "unreachable") res = await probe();
 
   let value: ZernioHealth;
   if (res.ok) {
@@ -238,6 +253,7 @@ export async function zernioHealth(force = false): Promise<ZernioHealth> {
       platform: a.platform,
       handle: a.username ? `@${a.username}` : a.displayName,
       accountId: a._id,
+      platformUserId: a.platformUserId,
       active: Boolean(a.isActive) && !a.needsReconnection,
     }));
     const profile = res.data.accounts?.find((a) => a.profileId);

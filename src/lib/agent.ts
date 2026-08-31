@@ -1,6 +1,7 @@
 import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import { MODEL, TOKEN_BUDGET, anthropic, composio } from "./composio";
+import { ZERNIO_TOOLS, isZernioTool, runZernioTool } from "./zernio-tools";
 
 export type ChatMessage = Anthropic.MessageParam;
 
@@ -22,12 +23,21 @@ export async function runAgent({
   session,
   system,
   messages,
+  zernio = true,
 }: {
   session: Session;
   system: string;
   messages: ChatMessage[];
+  /** Zernio-backed capabilities: scheduling, automations, cross-post, analytics. */
+  zernio?: boolean;
 }): Promise<{ reply: string; trace: string[] }> {
-  const tools = (await session.tools()) as Anthropic.ToolUnion[];
+  // Composio executes platform API calls; Zernio covers what needs a
+  // server-side clock or history. The plugin skills get the second set from an
+  // MCP connector, so the app has to define them natively to stay at parity.
+  const tools = [
+    ...((await session.tools()) as Anthropic.ToolUnion[]),
+    ...(zernio ? ZERNIO_TOOLS : []),
+  ];
 
   const conversation: ChatMessage[] = [...trimHistory(messages)];
   const trace: string[] = [];
@@ -58,10 +68,44 @@ export async function runAgent({
         .map((b) => b.name),
     );
 
-    const results = (await composio.provider.handleToolCalls(
-      session as never,
-      response,
-    )) as ChatMessage[];
+    const calls = response.content.filter(
+      (b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
+    );
+    const zernioCalls = calls.filter((b) => isZernioTool(b.name));
+
+    // Composio's handler rejects a response containing tools it does not own,
+    // so the two sets are dispatched separately and their results recombined
+    // into the single user message the API expects.
+    const results: ChatMessage[] =
+      zernioCalls.length === calls.length
+        ? []
+        : ((await composio.provider.handleToolCalls(
+            session as never,
+            zernioCalls.length === 0
+              ? response
+              : ({
+                  ...response,
+                  content: response.content.filter(
+                    (b) => b.type !== "tool_use" || !isZernioTool(b.name),
+                  ),
+                } as typeof response),
+          )) as ChatMessage[]);
+
+    if (zernioCalls.length > 0) {
+      const blocks: Anthropic.ToolResultBlockParam[] = await Promise.all(
+        zernioCalls.map(async (call) => ({
+          type: "tool_result" as const,
+          tool_use_id: call.id,
+          content: await runZernioTool(
+            call.name,
+            (call.input ?? {}) as Record<string, unknown>,
+          ),
+        })),
+      );
+      const first = results.find((m) => Array.isArray(m.content));
+      if (first && Array.isArray(first.content)) first.content.push(...blocks);
+      else results.push({ role: "user", content: blocks });
+    }
 
     for (const message of results) {
       if (!Array.isArray(message.content)) continue;

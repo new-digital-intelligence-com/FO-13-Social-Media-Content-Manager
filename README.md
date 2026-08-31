@@ -235,7 +235,7 @@ connect flow and a tab strip.
 |---|---|
 | Instagram | Overview, Posts, Reels, Stories, Messages, Insights, Compose, Queue, Monitor, Grow, Automation, Ask AI |
 | X | Overview, Compose, Timeline, Search, Lists, Grow, Messages, Ask AI |
-| YouTube | Overview, Videos, AI Studio, Upload, Comments, Playlists, Grow, Search, Ask AI |
+| YouTube | Overview, Videos, AI Studio, Upload, Comments, Playlists, Analytics, Grow, Search, Ask AI |
 
 ```
 src/app/page.tsx                platform grid
@@ -250,6 +250,12 @@ src/lib/{ig,x,yt}.ts            typed tool execution + result unwrapping
 src/lib/store.ts                JSON store under .data/ (queue, settings, selection)
 src/lib/cloudinary.ts           public-URL hosting for Reel covers + YT thumbnails
 src/lib/zernio.ts               Zernio client; never throws, degrades instead
+src/lib/zernio-features.ts      analytics, automations, slots, cross-post — one
+                                implementation behind routes, agent and UI
+src/lib/zernio-tools.ts         the same capabilities as agent tools, so the
+                                app's Ask AI matches the skills
+src/components/ZernioGate.tsx   shared "unavailable vs not set up" state
+src/app/api/zernio/*            analytics, automations, crosspost, queue slots
 src/app/api/{ig,x,yt}/*         manual actions (direct tool calls, no LLM)
 src/app/api/assist              AI writing help (tool-free, cheap)
 src/app/api/{chat,x/chat,yt/chat}  agent loop (tools, for each "Ask AI" tab)
@@ -425,6 +431,13 @@ integration is built around that rather than assuming uptime.
 - **An unreadable queue is never shown as an empty one.** `available: false`
   means we could not ask, not that nothing is scheduled — the UI renders a
   distinct state, because "nothing scheduled" during an outage would be a lie.
+- **Both surfaces reach every capability.** The skills get Zernio through the
+  MCP connector; the app gets the same capabilities as native agent tools
+  (`src/lib/zernio-tools.ts`) and REST routes (`/api/zernio/*`), all backed by
+  one implementation in `src/lib/zernio-features.ts`. Scheduling, automations,
+  cross-posting and measured analytics work in `/instagram` in Claude Code and
+  in the app's UI and Ask AI tab alike. **The only difference is auth**: a
+  browser-authorized connector versus `ZERNIO_API_KEY` in `.env.local`.
 - **The skills state which rung they landed on.** Scheduling has **no**
   fallback — the app's queue *is* Zernio — so an outage means nothing can be
   scheduled, and the skills say that instead of implying a post is held
@@ -436,6 +449,13 @@ integration is built around that rather than assuming uptime.
   surfaces the original post, 429 backs off, 5xx and timeouts mean outage. A
   failed publish is never retried blindly, since the first attempt may have
   partly succeeded.
+- **Two providers can point at two different accounts.** Composio and Zernio are
+  authorized separately, so nothing stops one reading account A while the other
+  publishes to account B — silently invalidating insights, cadence and
+  automation targeting. `GET /api/status` compares the **platform's own user id**
+  on each side (never the display name: Composio reports YouTube's *title* and
+  Zernio its *handle*, so a name comparison raises false alarms) and returns
+  `accountMismatches`. The home page shows it in red.
 - **Configured ≠ reachable ≠ usable.** A missing key is a setup task, not an
   outage, and the two are reported differently. So is an empty queue: a profile
   with no slots returns 404 on `/queue/slots`, which means "configure slots",
@@ -454,6 +474,36 @@ test one tool call:
 .venv/bin/python scripts/connect_and_call.py INSTAGRAM INSTAGRAM_GET_USER_INFO
 ```
 
+## What the app does, end to end
+
+The product it implements: *drafts and schedules posts across platforms, replies
+to comments and DMs in brand voice, and monitors mentions and trends to keep a
+consistent posting cadence.* Where each half lives:
+
+| Capability | Instagram | YouTube | X |
+|---|---|---|---|
+| Draft | ✅ | ✅ | ✗ not on Zernio |
+| Schedule | ✅ Zernio queue | ✅ Zernio queue | ✗ not on Zernio |
+| Cross-post | ✅ | ✅ | ✗ target hidden until connected |
+| Reply to comments | ✅ | ✅ | ✅ |
+| Reply to DMs | ✅ | — no DM system | ✅ |
+| Brand voice in drafts | ✅ | ✅ | ✅ |
+| Mentions | ✅ | — | ✗ no mentions endpoint on X |
+| Trends / discovery | ✅ suggestions | ✅ popular | ✅ search |
+| Cadence | ✅ | ✗ Instagram-only | ✗ Instagram-only |
+
+Brand voice is injected by `voicePrompt(settings)` into `/api/assist` and all
+three chat routes, so every draft — caption, comment reply, DM reply — speaks in
+it. The assist tasks are Instagram-shaped by default and take a `platform`
+override, because a YouTube *description* allows 5,000 characters and sets its
+title separately, while X is a hard 280.
+
+Two gaps are platform limits, not omissions: **X has no mentions endpoint**
+(monitoring a handle means searching for it) and **YouTube has no DM system**.
+Two are real and open: **X cannot be scheduled** (it is not connected on Zernio,
+so `Platform` is `instagram | youtube`), and **cadence is measured for Instagram
+only**.
+
 ## Constraints worth knowing
 
 - **Instagram supports Business/Creator accounts only.** Personal accounts are
@@ -466,6 +516,10 @@ test one tool call:
   credentials in February 2026 — and gates endpoints by plan tier.
 - **YouTube is quota-limited, not rate-limited.** Budget in units per day, not
   requests per minute.
+- **Cadence over a busy account is page-limited.** Instagram caps the media
+  `limit` parameter at 100, so a 30-day window on a high-volume account can hit
+  the page size. `last30Truncated` discloses that rather than reporting the page
+  size as if it were the real count.
 - **Zernio can be unavailable, and that is a designed-for state**, not an error
   path to patch. Anything time-based or history-based degrades; nothing else
   should notice.

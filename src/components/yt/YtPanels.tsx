@@ -63,9 +63,10 @@ export function YtOverview() {
         </div>
       </Card>
       <Note>
-        Watch time, retention and revenue come from the YouTube Analytics API,
-        which is a different API and not available here. These are view, like and
-        comment counts only.
+        These are view, like and comment counts from the Data API. Watch time,
+        retention curves, demographics and daily views come from the YouTube
+        Analytics API — see the <strong>Analytics</strong> tab, which reads them
+        through Zernio.
       </Note>
     </div>
   );
@@ -145,6 +146,9 @@ export function YtUpload() {
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [publishAt, setPublishAt] = useState("");
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleNote, setScheduleNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
@@ -211,9 +215,9 @@ export function YtUpload() {
   return (
     <Card className="space-y-4">
       <Note>
-        <strong>This uploads immediately.</strong> There is no scheduling here —
-        the video goes to your channel as soon as you confirm, at the privacy you
-        pick below.
+        <strong>Upload now sends it immediately.</strong> To publish later, use
+        &ldquo;Schedule it&rdquo; below — Zernio uploads the video as private and
+        flips it public at your chosen time.
         <br />
         Each upload costs roughly 1,600 quota units of a default 10,000 per day —
         about six uploads, and the quota resets daily on Pacific time. Defaults
@@ -417,6 +421,7 @@ export function YtUpload() {
       </Field>
 
       <AiAssist
+        platform="youtube"
         task="caption"
         context={[
           "Writing a YouTube description.",
@@ -462,12 +467,85 @@ export function YtUpload() {
           </div>
         </div>
       ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3 rounded-xl bg-black/[0.03] p-4">
+            <label className="space-y-1.5">
+              <span className="block text-sm font-medium">Publish at</span>
+              <input
+                type="datetime-local"
+                value={publishAt}
+                onChange={(e) => setPublishAt(e.target.value)}
+                className="rounded-lg border border-black/15 bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            <Button
+              variant="ghost"
+              disabled={!publishAt || !file || !title.trim() || scheduling}
+              onClick={async () => {
+                setScheduleNote(null);
+                setScheduling(true);
+                try {
+                  // Zernio fetches the video from a public URL, so the picked
+                  // file has to be hosted first — the same path the Instagram
+                  // composer uses for its media.
+                  setScheduleNote("Hosting the video so Zernio can fetch it…");
+                  const body = new FormData();
+                  body.append("file", file!);
+                  const host = await fetch("/api/media", { method: "POST", body });
+                  const hosted = await host.json();
+                  if (!host.ok) {
+                    setScheduleNote(
+                      hosted.code === "CLOUDINARY_NOT_CONFIGURED"
+                        ? `${hosted.error} Scheduling needs it; "Upload now" does not.`
+                        : (hosted.error ?? "Could not host the video."),
+                    );
+                    return;
+                  }
+
+                  const res = await fetch("/api/ig/schedule", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      platform: "youtube",
+                      caption: description,
+                      mediaUrl: hosted.url,
+                      mediaType: "video",
+                      publishAt: new Date(publishAt).toISOString(),
+                      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                      options: { title, visibility: privacyStatus },
+                    }),
+                  });
+                  const d = await res.json();
+                  setScheduleNote(
+                    res.ok
+                      ? `Scheduled for ${new Date(publishAt).toLocaleString()}. It uploads as private and goes ${privacyStatus} at that time.`
+                      : (d.error ?? "Could not schedule it."),
+                  );
+                } catch {
+                  setScheduleNote("Could not schedule it.");
+                } finally {
+                  setScheduling(false);
+                }
+              }}
+            >
+              {scheduling ? "Scheduling…" : "Schedule it"}
+            </Button>
+            <p className="w-full text-xs text-black/45">
+              Pick the video above, then schedule. It is hosted first so Zernio
+              can fetch it, uploaded as private, and made {privacyStatus} at your
+              time. Quota is spent at upload, not at publish.
+            </p>
+            {scheduleNote && (
+              <p className="w-full text-xs text-black/70">{scheduleNote}</p>
+            )}
+          </div>
         <Button
           onClick={() => setConfirming(true)}
           disabled={!file || !title.trim() || !description.trim() || busy}
         >
           Upload now
         </Button>
+        </div>
       )}
     </Card>
   );

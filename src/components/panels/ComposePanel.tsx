@@ -6,6 +6,7 @@ import { MediaInput, type MediaValue } from "../MediaInput";
 import { TemplateStudio } from "../TemplateStudio";
 import type { Ratio } from "@/lib/templates";
 import { Button, Card, ErrorNote, Field, Note, inputClass } from "../ui";
+import { CrossPostCard } from "./CrossPostCard";
 
 type Kind = "IMAGE" | "REELS" | "STORIES" | "CAROUSEL";
 
@@ -50,6 +51,7 @@ export function ComposePanel() {
   const [audioName, setAudioName] = useState("");
   const [userTags, setUserTags] = useState("");
   const [publishAt, setPublishAt] = useState("");
+  const [useQueue, setUseQueue] = useState(false);
   const needsVideo = kind === "REELS";
 
   /** Stories are 9:16; feed photos default to 4:5, carousels to square. */
@@ -121,7 +123,8 @@ export function ComposePanel() {
           kind,
           caption,
           ...mediaPayload(media, needsVideo),
-          publishAt: publishAt ? new Date(publishAt).toISOString() : null,
+          publishAt: useQueue ? null : publishAt ? new Date(publishAt).toISOString() : null,
+          useQueue,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           children:
             kind === "CAROUSEL"
@@ -133,9 +136,11 @@ export function ComposePanel() {
       if (!res.ok) setError(data.error);
       else
         setResult(
-          publishAt
-            ? `Scheduled for ${new Date(publishAt).toLocaleString()}. It will publish automatically — you do not need to do anything else.`
-            : "Saved as a draft. It has no date, so it will not publish until you set one in the Queue tab.",
+          useQueue
+            ? `Queued for the next free slot${data.post?.publishAt ? ` — ${new Date(data.post.publishAt).toLocaleString()}` : ""}. It will publish automatically.`
+            : publishAt
+              ? `Scheduled for ${new Date(publishAt).toLocaleString()}. It will publish automatically — you do not need to do anything else.`
+              : "Saved as a draft. It has no date, so it will not publish until you set one in the Queue tab.",
         );
     } catch {
       setError("Network error.");
@@ -455,11 +460,25 @@ export function ComposePanel() {
               className="rounded-lg border border-black/15 bg-white px-3 py-2 text-sm"
             />
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={useQueue}
+              onChange={(e) => setUseQueue(e.target.checked)}
+            />
+            Next free slot
+          </label>
           <Button variant="ghost" onClick={addToQueue} disabled={!ready || busy}>
-            {publishAt ? "Schedule it" : "Save as draft"}
+            {useQueue ? "Add to queue" : publishAt ? "Schedule it" : "Save as draft"}
           </Button>
           <p className="w-full text-xs text-black/45">
-            {publishAt ? (
+            {useQueue ? (
+              <>
+                Zernio picks the <strong>next free slot</strong> from your
+                recurring schedule and publishes it there. Set the slots in the
+                Queue tab. This ignores the date above.
+              </>
+            ) : publishAt ? (
               <>
                 <strong>This will publish on its own</strong> at the time above (
                 {Intl.DateTimeFormat().resolvedOptions().timeZone}). Zernio holds
@@ -474,6 +493,12 @@ export function ComposePanel() {
             )}
           </p>
         </div>
+
+        <CrossPostCard
+          content={caption}
+          mediaUrl={media.url}
+          mediaType={needsVideo ? "video" : "image"}
+        />
 
         {confirming ? (
           <div className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4">

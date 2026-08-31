@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, Empty, ErrorNote, Loading } from "../ui";
+import { ZernioAnalytics } from "./ZernioAnalytics";
 
 type Metric = { name?: string; title?: string; description?: string; values?: unknown };
 
@@ -79,6 +80,10 @@ function InsightsView({ days }: { days: number }) {
   return (
     <div className="space-y-5">
       <Coverage coverage={data.coverage} />
+
+      {/* Measured timing lives on Zernio: it needs history across posts, which
+          a single Instagram insights call cannot give. */}
+      <ZernioAnalytics platform="instagram" />
 
       {!data.series?.length && !data.totals?.length ? (
         <Empty

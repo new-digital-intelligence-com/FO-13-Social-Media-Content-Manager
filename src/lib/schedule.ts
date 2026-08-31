@@ -76,12 +76,30 @@ type ZernioPost = {
   }[];
 };
 
+/**
+ * Zernio's own `status` is authoritative — trust it over anything derived.
+ *
+ * Two traps here, both of which produced a wrong label before:
+ *   - A draft still comes back with `scheduledFor` stamped to its creation
+ *     time, so "has a date" does NOT mean armed. Only `status` says that.
+ *   - `isDraft` is absent from the response even for a draft, so it cannot be
+ *     used as the test either.
+ * Showing "publishes automatically" over a draft (or the reverse) is the kind
+ * of mislabel that gets something published unexpectedly.
+ */
 function toStatus(p: ZernioPost): ScheduleStatus {
-  const raw = (p.platforms?.[0]?.status ?? p.status ?? "").toLowerCase();
-  if (raw === "published" || raw === "posted") return "published";
-  if (raw === "failed" || raw === "error") return "failed";
-  if (p.isDraft || !p.scheduledFor) return "draft";
-  return "scheduled";
+  const own = (p.status ?? "").toLowerCase();
+  if (own === "draft") return "draft";
+  if (own === "published" || own === "posted") return "published";
+  if (own === "failed" || own === "error") return "failed";
+  if (own === "scheduled" || own === "queued") return "scheduled";
+
+  // No usable top-level status: fall back to the per-platform target.
+  const target = (p.platforms?.[0]?.status ?? "").toLowerCase();
+  if (target === "published" || target === "posted") return "published";
+  if (target === "failed" || target === "error") return "failed";
+  if (p.isDraft) return "draft";
+  return p.scheduledFor ? "scheduled" : "draft";
 }
 
 function map(p: ZernioPost, platform: Platform): ScheduledPost {
@@ -152,6 +170,8 @@ export type NewPost = {
   platform: Platform;
   caption?: string;
   mediaUrl?: string;
+  /** Extra media for a carousel; the first item is `mediaUrl`. */
+  mediaUrls?: string[];
   mediaType?: "image" | "video";
   /** ISO timestamp; null saves a draft. */
   publishAt?: string | null;
@@ -192,10 +212,14 @@ export async function addPost(input: NewPost): Promise<CreateResult> {
       },
     ],
   };
-  if (input.mediaUrl) {
-    body.mediaItems = [
-      { type: input.mediaType ?? "image", url: input.mediaUrl },
-    ];
+  const media = [input.mediaUrl, ...(input.mediaUrls ?? [])].filter(
+    (u): u is string => Boolean(u),
+  );
+  if (media.length > 0) {
+    body.mediaItems = media.map((url) => ({
+      type: input.mediaType ?? "image",
+      url,
+    }));
   }
 
   if (input.useQueue) {

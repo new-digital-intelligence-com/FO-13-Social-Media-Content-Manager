@@ -33,19 +33,56 @@ export async function GET(request: Request) {
   });
 }
 
+/**
+ * Instagram post kind -> Zernio platform fields.
+ *
+ * Zernio infers most kinds from the media: one image is a feed post, one video
+ * is a Reel, several images are a carousel. A **Story is the exception** — it
+ * looks identical to a feed image and only `contentType: "story"` distinguishes
+ * it. Dropping this is why a scheduled Story published as a normal post.
+ */
+function instagramOptions(kind: string | undefined, extra: Record<string, unknown> = {}) {
+  return kind === "STORIES" ? { contentType: "story", ...extra } : extra;
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid body." }, { status: 400 });
 
+  const platform: Platform = body.platform === "youtube" ? "youtube" : "instagram";
+
+  // Zernio fetches media from a public URL. A staged Composio file descriptor
+  // is not one, so fail loudly instead of scheduling a post with no media.
+  if (!body.mediaUrl && !body.imageUrl && !body.videoUrl && (body.imageFile || body.videoFile)) {
+    return NextResponse.json(
+      {
+        error:
+          "Scheduling needs a public media URL. Re-add the media so it is hosted first, or paste a URL.",
+        needsSetup: true,
+      },
+      { status: 400 },
+    );
+  }
+
+  // Carousel slides arrive as `children`; every slide has to reach Zernio or
+  // the post silently publishes as a single image.
+  const extraMedia: string[] = Array.isArray(body.children)
+    ? body.children.map((c: { imageUrl?: string }) => c?.imageUrl).filter(Boolean)
+    : [];
+
   const result = await addPost({
-    platform: body.platform === "youtube" ? "youtube" : "instagram",
+    platform,
     caption: body.caption,
     mediaUrl: body.mediaUrl ?? body.imageUrl ?? body.videoUrl,
-    mediaType: body.videoUrl ? "video" : body.mediaType,
+    mediaUrls: extraMedia,
+    mediaType: body.videoUrl || body.kind === "REELS" ? "video" : body.mediaType,
     publishAt: body.publishAt ?? null,
     useQueue: Boolean(body.useQueue),
     timezone: body.timezone,
-    options: body.options,
+    options:
+      platform === "instagram"
+        ? instagramOptions(body.kind, body.options ?? {})
+        : body.options,
   });
 
   if (!result.ok) {

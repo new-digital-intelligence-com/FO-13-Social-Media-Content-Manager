@@ -15,7 +15,10 @@ export async function GET() {
       execute<Media[]>("INSTAGRAM_GET_IG_USER_MEDIA", {
         ig_user_id: ME,
         fields: MEDIA_FIELDS,
-        limit: 50,
+        // 100 is Instagram's hard maximum for this parameter; asking for more
+        // is rejected outright. A very busy account can still exceed it in 30
+        // days, which is what `last30Truncated` exists to disclose.
+        limit: 100,
       }),
       listPosts(),
     ]);
@@ -53,6 +56,10 @@ export async function GET() {
       target,
       last7,
       last30: within(30),
+      // A window that fills the entire fetch cannot be trusted as a count —
+      // there may be more posts beyond the page. Say so rather than reporting
+      // the page size as if it were the real figure.
+      last30Truncated: posts.length >= 100 && within(30) >= 100,
       totalKnown: posts.length,
       lastPostAt: lastPostAt ? new Date(lastPostAt).toISOString() : null,
       daysSinceLast,

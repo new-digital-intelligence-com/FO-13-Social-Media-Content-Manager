@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AiAssist } from "../AiAssist";
 import { Button, Card, ErrorNote, Field, Loading, Note, inputClass } from "../ui";
+import { AutomationsList } from "./AutomationsList";
 
 type IceBreaker = { question: string; payload?: string };
 
@@ -65,6 +66,7 @@ function BrandVoice() {
   if (!settings) return <Card><Loading /></Card>;
 
   return (
+    <div className="space-y-5">
     <Card className="space-y-4">
       <div>
         <h3 className="font-medium">Brand voice</h3>
@@ -149,6 +151,11 @@ function BrandVoice() {
         {status && <span className="text-sm text-black/55">{status}</span>}
       </div>
     </Card>
+
+    <Card className="space-y-4">
+      <AutomationsList />
+    </Card>
+    </div>
   );
 }
 

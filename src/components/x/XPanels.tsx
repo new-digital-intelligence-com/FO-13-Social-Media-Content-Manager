@@ -180,6 +180,7 @@ export function XCompose({ me }: { me: Me | null }) {
             />
           </label>
           <AiAssist
+            platform="x"
             task="caption"
             context={[
               `Writing an X post (280 characters max) for @${me?.username ?? ""}.`,
@@ -599,6 +600,7 @@ export function XDms() {
           />
         </Field>
         <AiAssist
+          platform="x"
           task="dm-reply"
           context={dmContext(data, participantId)}
           placeholder="What should the message say?"

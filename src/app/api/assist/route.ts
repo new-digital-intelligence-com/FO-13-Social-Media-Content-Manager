@@ -6,8 +6,21 @@ export const runtime = "nodejs";
 
 /**
  * Writing help for the manual composers. Deliberately tool-free: it costs a
- * fraction of the agent loop and stays well inside Groq's 8k tokens/min.
+ * fraction of the agent loop.
+ *
+ * Tasks are Instagram-shaped by default because that is where most composing
+ * happens, but the same task is called from the YouTube and X panels. Without
+ * a platform override, a YouTube *description* was being drafted under
+ * Instagram's caption rules (2,200 characters, hashtag advice) when YouTube
+ * allows 5,000 and treats the title separately.
  */
+const PLATFORM_RULES: Record<string, string> = {
+  youtube:
+    "Target YouTube, not Instagram. Descriptions may run to 5,000 characters and should front-load the first two lines, which are all that shows above the fold. The video title is set separately -- do not open with it. Use keywords naturally; YouTube tags are a separate field, so do not append hashtag walls.",
+  x: "Target X (Twitter), not Instagram. The hard limit is 280 characters per post -- stay inside it. If the idea does not fit, return a numbered thread where each part is independently under 280.",
+  twitter:
+    "Target X (Twitter), not Instagram. The hard limit is 280 characters per post -- stay inside it. If the idea does not fit, return a numbered thread where each part is independently under 280.",
+};
 const TASKS = {
   caption: {
     label: "caption",
@@ -54,10 +67,11 @@ const TASKS = {
 
 export async function POST(request: Request) {
   try {
-    const { task, prompt, context } = (await request.json()) as {
+    const { task, prompt, context, platform } = (await request.json()) as {
       task: keyof typeof TASKS;
       prompt?: string;
       context?: string;
+      platform?: string;
     };
 
     const config = TASKS[task];
@@ -70,8 +84,11 @@ export async function POST(request: Request) {
 
     // Every draft speaks in the configured brand voice.
     const settings = await getSettings();
+    const platformRule = platform ? PLATFORM_RULES[platform.toLowerCase()] : undefined;
     const text = await complete({
-      system: `${config.system}\n\n${voicePrompt(settings)}`,
+      system: [config.system, platformRule, voicePrompt(settings)]
+        .filter(Boolean)
+        .join("\n\n"),
       prompt:
         [prompt, context && `Context:\n${context}`].filter(Boolean).join("\n\n") ||
         `Write a ${config.label}.`,

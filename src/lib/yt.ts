@@ -83,13 +83,32 @@ export function explainYtError(message: string) {
   return message;
 }
 
+/**
+ * A caller mistake, as opposed to an upstream failure.
+ *
+ * The routes validate input by throwing (`throw new Error("videoId is
+ * required.")`), so without this every bad request came back as a 500 —
+ * indistinguishable from YouTube being down, and contradicting the 400-vs-503
+ * contract the Zernio routes use.
+ */
+function isClientError(message: string) {
+  return (
+    /\bis required\b/i.test(message) ||
+    /^unknown action\b/i.test(message) ||
+    /\bmust be\b/i.test(message)
+  );
+}
+
 /** Shared error handling for every YouTube route. */
 export async function ytRoute<T>(run: () => Promise<T>) {
   try {
     return NextResponse.json(await run());
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: explainYtError(message) }, { status: 500 });
+    return NextResponse.json(
+      { error: explainYtError(message) },
+      { status: isClientError(message) ? 400 : 500 },
+    );
   }
 }
 

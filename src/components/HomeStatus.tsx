@@ -14,7 +14,9 @@ type PlatformStatus = {
 
 type Status = {
   platforms?: PlatformStatus[];
-  queue?: { scheduled: number; awaitingApproval: number; drafts: number };
+  queue?: { scheduled: number; drafts: number; available?: boolean };
+  /** Reads and writes hitting different accounts on the same platform. */
+  accountMismatches?: { platform: string; composio?: string; zernio?: string }[];
   error?: string;
 };
 
@@ -48,7 +50,7 @@ export function HomeStatus() {
   }, []);
 
   const queue = status?.queue;
-  const needsApproval = queue?.awaitingApproval ?? 0;
+  const mismatches = status?.accountMismatches ?? [];
 
   return (
     <div className="mt-10 space-y-3">
@@ -111,15 +113,43 @@ export function HomeStatus() {
         })}
       </div>
 
-      {needsApproval > 0 && (
-        <Link
-          href="/instagram"
-          className="flex items-center gap-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200"
+      {/* The one state that silently corrupts everything else: reading one
+          account and publishing to another. Never let it pass unremarked. */}
+      {mismatches.map((m) => (
+        <div
+          key={m.platform}
+          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-900 ring-1 ring-red-200"
         >
           <span className="font-medium">
-            {needsApproval} post{needsApproval === 1 ? "" : "s"} awaiting your approval
+            {m.platform} is connected to two different accounts.
+          </span>{" "}
+          Reading from <strong>{m.composio}</strong>, but scheduling publishes to{" "}
+          <strong>{m.zernio}</strong>. Insights, cadence and comment triage
+          describe the first; anything you schedule goes to the second.
+          Reconnect one of them so both point at the same account.
+        </div>
+      ))}
+
+      {queue && queue.available === false && (
+        <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+          <span className="font-medium">The queue could not be read.</span>{" "}
+          Scheduling runs on Zernio, which is not responding — this is not the
+          same as having nothing scheduled.
+        </div>
+      )}
+
+      {queue && queue.available !== false && queue.drafts > 0 && (
+        <Link
+          href="/instagram"
+          className="flex items-center gap-3 rounded-xl bg-black/[0.03] px-4 py-3 text-sm ring-1 ring-black/10"
+        >
+          <span className="font-medium">
+            {queue.drafts} draft{queue.drafts === 1 ? "" : "s"}
           </span>
-          <span className="text-amber-700">— nothing publishes until you approve →</span>
+          <span className="text-black/55">
+            — no date set, so {queue.drafts === 1 ? "it will" : "they will"} not
+            publish →
+          </span>
         </Link>
       )}
     </div>
