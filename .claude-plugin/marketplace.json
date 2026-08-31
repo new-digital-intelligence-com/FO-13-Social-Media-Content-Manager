@@ -1,24 +1,38 @@
 {
-  "name": "socialmedia",
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ndi-social",
   "owner": {
     "name": "New Digital Intelligence",
     "url": "https://new-digital-intelligence.com"
   },
+  "description": "NDI's Social Media Manager plugins for Claude Code and Cowork, installable straight from this repo.",
   "plugins": [
     {
-      "source": "./plugins/instagram-manager",
       "name": "instagram-manager",
-      "description": "Manage an Instagram Business or Creator account end to end through Composio: publishing, insights, comments, and direct messages."
+      "source": "./plugins/instagram-manager",
+      "displayName": "NDI - Instagram Manager",
+      "description": "Manage an Instagram Business or Creator account end to end through Composio: publishing, insights, comments, and direct messages.",
+      "author": { "name": "New Digital Intelligence" },
+      "category": "social",
+      "keywords": ["instagram", "social-media", "composio", "publishing", "analytics", "ndi"]
     },
     {
-      "source": "./plugins/x-manager",
       "name": "x-manager",
-      "description": "Manage an X (Twitter) account through Composio: posting and threads, engagement, search and monitoring, lists, DMs and analytics."
+      "source": "./plugins/x-manager",
+      "displayName": "NDI - X (Twitter) Manager",
+      "description": "Manage an X (Twitter) account through Composio: posting and threads, engagement, search and monitoring, lists, DMs and analytics.",
+      "author": { "name": "New Digital Intelligence" },
+      "category": "social",
+      "keywords": ["x", "twitter", "social-media", "composio", "engagement", "ndi"]
     },
     {
-      "source": "./plugins/youtube-manager",
       "name": "youtube-manager",
-      "description": "Manage a YouTube channel through Composio: uploads, metadata, playlists, comments, transcripts and analytics, with transcript-driven AI workflows."
+      "source": "./plugins/youtube-manager",
+      "displayName": "NDI - YouTube Manager",
+      "description": "Manage a YouTube channel through Composio: uploads, metadata, playlists, comments, transcripts and analytics, with transcript-driven AI workflows.",
+      "author": { "name": "New Digital Intelligence" },
+      "category": "social",
+      "keywords": ["youtube", "video", "social-media", "composio", "analytics", "ndi"]
     }
   ]
 }
