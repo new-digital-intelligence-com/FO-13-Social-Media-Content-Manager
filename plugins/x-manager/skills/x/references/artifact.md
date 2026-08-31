@@ -39,7 +39,7 @@ page. Do not fill a section with `[]` just because a fetch failed.
 ```js
 DATA = {
   updated: "ISO timestamp of this refresh",
-  connectors: [{ name, does, connected }],          // Composio, Zernio
+  connectors: [{ name, does, connected, detail }],   // see below — THREE states
   platforms:  [{ id, label, handle, connected }],   // instagram | x | youtube
   alerts:     [{ level: "warn"|"error", text }],    // studio-wide problems
   data: {
@@ -96,6 +96,23 @@ slots, comment-to-DM, cross-post and measured analytics. A platform with
 
 **Never put an API key in the page.** Artifacts are shareable HTML; the studio
 shows connection *state*, never a credential.
+
+### Connectors have three states, not two
+
+`connected` is `true`, `false`, or **`null` / omitted meaning "not checked this
+refresh"**. Setting `false` for a provider you simply did not query prints
+"Not connected — its features are unavailable" over a working connector, and
+sends the user off reconnecting something that was never broken.
+
+- Queried it and it answered → `connected: true`
+- Queried it and it is genuinely not connected → `connected: false`
+- **Did not query it this turn → `connected: null`** (renders "◌ Not checked
+  this refresh")
+
+`detail` carries the sub-state, because a provider can be connected while the
+account behind it is not: `detail: "Instagram toolkit has no authorized
+account — comments, DMs and insights cannot be read."` That is a different
+problem from the connector being down, and the user fixes it differently.
 
 ## What the page may and may not do
 

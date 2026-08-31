@@ -51,10 +51,12 @@
   .led { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: none; }
   .led.on { background: #059669; box-shadow: 0 0 0 3px var(--ok-bg); }
   .led.off { border: 1.5px solid var(--faint); }
+  .led.unknown { border: 1.5px dashed var(--faint); }
   .conn b { font-size: 13.5px; font-weight: 600; }
   .conn .does { color: var(--muted); font-size: 12px; margin-top: 2px; }
   .conn .st { font-family: var(--mono); font-size: 10.5px; margin-top: 5px; }
   .conn .st.on { color: var(--ok-ink); } .conn .st.off { color: var(--warn-ink); }
+  .conn .st.unknown { color: var(--faint); }
 
   .switch { display: flex; flex-wrap: wrap; gap: 6px; }
   .sw { font: inherit; font-size: 13px; font-weight: 500; color: var(--muted); background: var(--surface); border: 1px solid var(--hairline); border-radius: 10px; padding: 7px 13px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
@@ -198,8 +200,8 @@ const FOLD = { instagram: 125 };
 const DATA = {
   updated: null,
   connectors: [
-    { name: "Composio", does: "Posts, comments, DMs, insights — the platform APIs.", connected: false },
-    { name: "Zernio",   does: "Scheduling, queue slots, comment-to-DM, cross-post, measured analytics.", connected: false },
+    { name: "Composio", does: "Posts, comments, DMs, insights — the platform APIs.", connected: null },
+    { name: "Zernio",   does: "Scheduling, queue slots, comment-to-DM, cross-post, measured analytics.", connected: null },
   ],
   platforms: [
     { id: "instagram", label: "Instagram", handle: null, connected: false },
@@ -523,14 +525,27 @@ function rUpload(v) {
 const RENDER = { stats: rStats, media: rMedia, feed: rFeed, threads: rThreads, triage: rTriage, coll: rColl, people: rPeople, queue: rQueue, compose: rCompose, insights: rInsights, autos: rAutos, cross: rCross, studio: rStudio, upload: rUpload };
 
 /* ── chrome ──────────────────────────────────────────────────────────────── */
+/**
+ * Three states, not two. `connected: null` (or omitted) means THIS REFRESH DID
+ * NOT CHECK — which is not the same as "not connected". Printing "not
+ * connected" for a provider you simply did not query is a lie the page used to
+ * tell, and it sent people off reconnecting a working connector.
+ */
 function renderConnectors() {
   const host = document.getElementById("connectors"); host.replaceChildren();
   for (const c of DATA.connectors || []) {
+    const unknown = c.connected == null;
+    const cls = unknown ? "unknown" : c.connected ? "on" : "off";
+    const label = unknown
+      ? "◌ Not checked this refresh"
+      : c.connected ? "● Connected" : "○ Not connected — its features are unavailable";
     const box = el("div", "conn");
-    box.append(el("span", "led " + (c.connected ? "on" : "off")));
+    box.append(el("span", "led " + cls));
     const t = el("div");
     t.append(el("b", null, c.name), el("div", "does", c.does || ""));
-    t.append(el("div", "st " + (c.connected ? "on" : "off"), c.connected ? "● Connected" : "○ Not connected — its features are unavailable"));
+    t.append(el("div", "st " + cls, label));
+    // A provider can be connected while the account behind it is not — say so.
+    if (c.detail) t.append(el("div", "does", c.detail));
     box.append(t); host.append(box);
   }
 }
