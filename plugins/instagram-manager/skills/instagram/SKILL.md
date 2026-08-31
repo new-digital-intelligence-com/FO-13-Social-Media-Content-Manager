@@ -74,3 +74,24 @@ Get the Composio `log_id` first, then work through the failure modes in
 [references/rules.md](references/rules.md) — account type, connection state,
 Meta permission gap, or a Composio project credential problem. These have
 different fixes; do not reconnect the account to solve a project-key 401.
+
+## 5. Show the result, don't just describe it
+
+In the **Claude app** or on claude.ai, publish an **Artifact** instead of a wall
+of text whenever the answer is a queue, a report, a set of drafts, or anything
+with more than a couple of rows. Use the Content Studio's own visual language so
+both surfaces read as one product, and lead with a **connector status strip** —
+Composio and Zernio, what each powers, and whether it is connected — because not
+knowing which provider is missing is the commonest confusion.
+
+See [references/artifact.md](references/artifact.md) for the tokens, the
+components, and which shape to build for which request.
+
+Default to a **snapshot**: fetch with your connectors, bake the data in, make
+the page interactive (tabs, filters, counters, editable drafts) but let actions
+come back through you. Only give a page live connector access when you have
+already observed a real request and response for every tool it calls, in this
+session — the type contract carries the call envelope, never a tool's argument
+names or result shape.
+
+In a terminal there is no artifact viewer: answer in text.

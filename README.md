@@ -396,7 +396,40 @@ Three YouTube constraints the surfaces state rather than hide:
 A YouTube thumbnail is URL-only (`thumbnailUrl` has no file equivalent), which
 is one of the two reasons the app needs Cloudinary.
 
-## 5. Zernio — the second provider
+## 5. Artifacts — the skills render a UI, not a wall of text
+
+In the Claude app, `/instagram`, `/youtube` and `/x` publish an **Artifact**
+rather than describing a queue in prose: the same tokens and components as the
+web app, so both surfaces read as one product. In a terminal there is no
+artifact viewer, so the skills answer in text instead.
+
+Every artifact leads with a **connector strip** — Composio and Zernio, what each
+powers, and whether it is connected — because not knowing *which* provider is
+missing is the commonest confusion. A missing connector greys out its section
+with a reason; "not connected" and "nothing scheduled" never look alike.
+
+Two modes:
+
+| | Snapshot (default) | Live |
+|---|---|---|
+| Data | Claude fetches it, bakes it into the page | The page calls connectors itself via the `mcp` capability |
+| Interactive | Yes — tabs, filters, counters, editable drafts | Yes, plus refresh without another turn |
+| Publishes to a platform | **Never.** Buttons say "Copy for Claude" | Only with tools whose real request/response was observed first |
+| Requires | Nothing | An observed request/response per tool, in-session |
+
+The precondition on Live mode is not optional: the runtime contract carries the
+call envelope but never a tool's argument names or result encoding, so a page
+that calls an unobserved tool is guessing. Default to Snapshot.
+
+Rules and tokens live per plugin in `skills/<platform>/references/artifact.md`,
+next to a working `artifact-template.html` carrying every component and state —
+the skills adapt that rather than redesigning each time, which is what keeps
+successive artifacts consistent with each other and with the app.
+
+**No credential ever goes in the page** — artifacts are shareable HTML; they show
+connection state, never a key.
+
+## 6. Zernio — the second provider
 
 Composio answers "do this on Instagram now". Zernio answers "do this later,
 repeatedly, and tell me whether it worked" — anything needing a server-side
@@ -465,7 +498,7 @@ Duplicate protection is worth knowing: a repeated `x-request-id` within ~5 min
 returns the original post (HTTP 200, a retry), and identical content to the same
 account within 24 h is rejected 409. The app sends a fresh UUID per call.
 
-## 6. `scripts/` — Python verification harness
+## 7. `scripts/` — Python verification harness
 
 Proved the connection before any app code existed. Still the quickest way to
 test one tool call:

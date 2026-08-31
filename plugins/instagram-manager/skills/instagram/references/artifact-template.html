@@ -1,0 +1,607 @@
+<title>Studio Artifact Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+
+<style>
+  /* Light palette — lifted from src/app/globals.css and src/components/ui.tsx
+     so the Claude app and the web app read as one product. */
+  :root {
+    --brand: #fe0100;
+    --brand-ink: #c40100;
+    --ground: #f7f7f8;
+    --surface: #ffffff;
+    --ink: #101014;
+    --muted: rgba(0, 0, 0, 0.55);
+    --faint: rgba(0, 0, 0, 0.45);
+    --hairline: rgba(0, 0, 0, 0.10);
+    --inset: rgba(0, 0, 0, 0.03);
+
+    --ok-bg: #ecfdf5;   --ok-ink: #047857;   --ok-ring: #a7f3d0;
+    --warn-bg: #fffbeb; --warn-ink: #92400e; --warn-ring: #fde68a;
+    --bad-bg: #fef2f2;  --bad-ink: #b91c1c;  --bad-ring: #fecaca;
+
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  /* Only tokens are redefined per theme — never a component rule, or the
+     un-stamped "system" state renders one theme's text on the other's ground. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #141416;
+      --surface: #1c1c1f;
+      --ink: #f2f2f4;
+      --muted: rgba(255, 255, 255, 0.60);
+      --faint: rgba(255, 255, 255, 0.45);
+      --hairline: rgba(255, 255, 255, 0.12);
+      --inset: rgba(255, 255, 255, 0.04);
+      --ok-bg: #052e23;   --ok-ink: #6ee7b7;   --ok-ring: #065f46;
+      --warn-bg: #2e2205; --warn-ink: #fcd34d; --warn-ring: #78500a;
+      --bad-bg: #2e0b0b;  --bad-ink: #fca5a5;  --bad-ring: #7f1d1d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141416;
+    --surface: #1c1c1f;
+    --ink: #f2f2f4;
+    --muted: rgba(255, 255, 255, 0.60);
+    --faint: rgba(255, 255, 255, 0.45);
+    --hairline: rgba(255, 255, 255, 0.12);
+    --inset: rgba(255, 255, 255, 0.04);
+    --ok-bg: #052e23;   --ok-ink: #6ee7b7;   --ok-ring: #065f46;
+    --warn-bg: #2e2205; --warn-ink: #fcd34d; --warn-ring: #78500a;
+    --bad-bg: #2e0b0b;  --bad-ink: #fca5a5;  --bad-ring: #7f1d1d;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  .wrap {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 32px 20px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  header p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 62ch;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 8px;
+  }
+
+  /* ── Connector strip ───────────────────────────────────────────────────
+     Leads every artifact. Names what each provider powers, so a missing
+     tick explains which capabilities are gone. */
+  .connectors {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  .conn {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+  .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex: none;
+  }
+  .dot.on  { background: #059669; box-shadow: 0 0 0 3px var(--ok-bg); }
+  .dot.off { background: transparent; border: 1.5px solid var(--faint); }
+  .conn-name { font-weight: 600; font-size: 14px; }
+  .conn-does { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .conn-state { font-family: var(--mono); font-size: 11px; margin-top: 6px; }
+  .conn-state.on  { color: var(--ok-ink); }
+  .conn-state.off { color: var(--warn-ink); }
+
+  /* ── Tabs ─────────────────────────────────────────────────────────────── */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    border-bottom: 1px solid var(--hairline);
+    padding-bottom: 10px;
+  }
+  .tab {
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--muted);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 7px 13px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .tab:hover { background: var(--inset); color: var(--ink); }
+  .tab[aria-selected="true"] { background: var(--ink); color: var(--ground); }
+  .tab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .panel { display: flex; flex-direction: column; gap: 14px; }
+  .panel[hidden] { display: none; }
+
+  /* ── Card ─────────────────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .card > h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .card .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; }
+
+  /* ── Pills carry row state at a glance ────────────────────────────────── */
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .pill.ok   { background: var(--ok-bg);   color: var(--ok-ink);   border-color: var(--ok-ring); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-ring); }
+  .pill.bad  { background: var(--bad-bg);  color: var(--bad-ink);  border-color: var(--bad-ring); }
+  .pill.mute { background: var(--inset);   color: var(--muted);    border-color: var(--hairline); }
+
+  .note, .errornote {
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 13px;
+    border: 1px solid;
+    margin: 0;
+  }
+  .note      { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-ring); }
+  .errornote { background: var(--bad-bg);  color: var(--bad-ink);  border-color: var(--bad-ring); }
+
+  .empty {
+    border: 1px dashed var(--hairline);
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .empty p { margin: 0; }
+  .empty .hint { color: var(--faint); font-size: 13px; margin-top: 4px; }
+
+  /* ── Queue rows ───────────────────────────────────────────────────────── */
+  .group-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 4px 0 0;
+  }
+  .group-hint { color: var(--muted); font-size: 12.5px; margin: 2px 0 8px; }
+  .row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .row:first-of-type { border-top: none; }
+  .row-body { min-width: 0; }
+  .row-cap {
+    font-size: 13.5px;
+    margin: 0 0 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .row-when {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Stats ────────────────────────────────────────────────────────────── */
+  .stats {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+  .stat .n {
+    font-size: 24px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .stat .l { font-size: 12.5px; color: var(--faint); }
+
+  /* ── Best-time list ───────────────────────────────────────────────────── */
+  .slot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: var(--inset);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+  .slot .t { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .slot .v { color: var(--muted); font-size: 12.5px; }
+  .slot .c { color: var(--faint); font-size: 11px; margin-left: 8px; }
+
+  /* ── Composer ─────────────────────────────────────────────────────────── */
+  textarea {
+    width: 100%;
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 11px 13px;
+    resize: vertical;
+    min-height: 92px;
+  }
+  textarea:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; border-color: transparent; }
+  .counter-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 7px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--faint);
+  }
+  .counter.over { color: var(--bad-ink); font-weight: 500; }
+  .fold { color: var(--warn-ink); }
+
+  .btn {
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    border-radius: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .btn.primary { background: var(--brand); color: #fff; border: 1px solid var(--brand); }
+  .btn.primary:hover { background: var(--brand-ink); border-color: var(--brand-ink); }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
+  .btn.ghost:hover { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 5%, transparent); }
+  .btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+
+  /* ── Automation cards ─────────────────────────────────────────────────── */
+  .auto-meta { font-size: 12.5px; color: var(--muted); margin: 5px 0 0; }
+  .auto-stats {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    margin-top: 5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .scroller { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); font-weight: 500; }
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--inset);
+    padding: 1px 5px;
+    border-radius: 5px;
+  }
+
+  footer {
+    color: var(--faint);
+    font-size: 12.5px;
+    border-top: 1px solid var(--hairline);
+    padding-top: 16px;
+    max-width: 68ch;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Content Studio · artifact template</p>
+    <h1>What a skill renders instead of chat</h1>
+    <p>
+      The surfaces <code>/instagram</code>, <code>/youtube</code> and <code>/x</code>
+      publish in the Claude app, using the web app's own tokens and components.
+      Every element below is a pattern the skills reuse — the content is
+      illustrative, not live data.
+    </p>
+  </header>
+
+  <section>
+    <p class="eyebrow">Connectors — always first</p>
+    <div class="connectors">
+      <div class="conn">
+        <span class="dot on" aria-hidden="true"></span>
+        <div>
+          <div class="conn-name">Composio</div>
+          <div class="conn-does">Posts, comments, DMs, insights — the platform APIs.</div>
+          <div class="conn-state on">● Connected</div>
+        </div>
+      </div>
+      <div class="conn">
+        <span class="dot off" aria-hidden="true"></span>
+        <div>
+          <div class="conn-name">Zernio</div>
+          <div class="conn-does">Scheduling, queue slots, comment-to-DM, cross-post, measured analytics.</div>
+          <div class="conn-state off">○ Not connected — those five are unavailable</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist" aria-label="Example surfaces">
+    <button class="tab" role="tab" aria-selected="true"  aria-controls="p-queue"  id="t-queue">Queue</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-report" id="t-report">Report</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-compose" id="t-compose">Compose</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-auto"   id="t-auto">Automations</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-states" id="t-states">States</button>
+  </div>
+
+  <!-- Queue -->
+  <div class="panel" id="p-queue" role="tabpanel" aria-labelledby="t-queue">
+    <div class="card">
+      <h3>Publishing queue</h3>
+      <p class="sub">Times shown in <span id="tz">your timezone</span>.</p>
+
+      <p class="group-label">Scheduled</p>
+      <p class="group-hint">These publish on their own at the time shown.</p>
+      <div class="row">
+        <div class="row-body">
+          <p class="row-cap">Three things I wish I'd known before starting — carousel, 6 slides.</p>
+          <span class="row-when">Tue 09:00 · in 2 days</span>
+        </div>
+        <span class="pill ok">Scheduled</span>
+      </div>
+      <div class="row">
+        <div class="row-body">
+          <p class="row-cap">Behind the scenes of this week's shoot.</p>
+          <span class="row-when">Thu 17:30 · in 4 days</span>
+        </div>
+        <span class="pill ok">Scheduled</span>
+      </div>
+
+      <p class="group-label" style="margin-top:18px">Drafts</p>
+      <p class="group-hint">No date set — these will never publish until one is.</p>
+      <div class="row">
+        <div class="row-body">
+          <p class="row-cap">Untitled reel concept.</p>
+          <span class="row-when">No date</span>
+        </div>
+        <span class="pill mute">Draft · will not publish</span>
+      </div>
+
+      <p class="group-label" style="margin-top:18px">Done</p>
+      <div class="row">
+        <div class="row-body">
+          <p class="row-cap">A quiet Sunday post.</p>
+          <span class="row-when">Sun 08:15</span>
+        </div>
+        <span class="pill ok">Published</span>
+      </div>
+      <div class="row">
+        <div class="row-body">
+          <p class="row-cap">Launch announcement.</p>
+          <span class="row-when">Fri 12:00</span>
+        </div>
+        <span class="pill bad">Failed after 3 retries</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report -->
+  <div class="panel" id="p-report" role="tabpanel" aria-labelledby="t-report" hidden>
+    <div class="card">
+      <h3>Last 30 days</h3>
+      <p class="sub">Figures as returned. A metric that could not be fetched is shown missing, never estimated.</p>
+      <div class="stats">
+        <div class="stat"><div class="n">12</div><div class="l">Posts</div></div>
+        <div class="stat"><div class="n">4.9k</div><div class="l">Reach</div></div>
+        <div class="stat"><div class="n">311</div><div class="l">Engagements</div></div>
+        <div class="stat"><div class="n">—</div><div class="l">Demographics</div></div>
+      </div>
+      <p class="note" style="margin-top:14px">
+        Demographics unavailable — Meta withholds them below roughly 100 followers.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Best times to post</h3>
+      <p class="sub">Converted from UTC to your timezone. Post count is shown so thin data reads as thin.</p>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="slot"><span class="t">Tue 19:00</span><span class="v">8.4 avg engagement<span class="c">11 posts</span></span></div>
+        <div class="slot"><span class="t">Sat 11:00</span><span class="v">7.1 avg engagement<span class="c">9 posts</span></span></div>
+        <div class="slot"><span class="t">Thu 08:00</span><span class="v">6.8 avg engagement<span class="c">2 posts</span></span></div>
+      </div>
+      <p class="note" style="margin-top:12px">
+        The 08:00 slot rests on 2 posts. That is coincidence, not a pattern — the count is there so you can tell.
+      </p>
+    </div>
+  </div>
+
+  <!-- Compose -->
+  <div class="panel" id="p-compose" role="tabpanel" aria-labelledby="t-compose" hidden>
+    <div class="card">
+      <h3>Caption</h3>
+      <p class="sub">Counted against the real platform limit, with the fold marked.</p>
+      <label for="cap" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Caption</label>
+      <textarea id="cap" rows="4">The part nobody tells you about starting: the first ninety days are mostly unglamorous. Here is what actually moved the needle.</textarea>
+      <div class="counter-row">
+        <span class="counter" id="count">0 / 2,200</span>
+        <span class="fold" id="fold">first 125 characters show before the fold</span>
+      </div>
+      <div class="actions">
+        <button class="btn primary" type="button">Copy for Claude</button>
+        <button class="btn ghost" type="button">Send back to Claude</button>
+      </div>
+      <p class="sub" style="margin:10px 0 0">
+        Nothing here reaches Instagram. A snapshot page never publishes — the
+        buttons hand text back to Claude, and the label says so.
+      </p>
+    </div>
+  </div>
+
+  <!-- Automations -->
+  <div class="panel" id="p-auto" role="tabpanel" aria-labelledby="t-auto" hidden>
+    <div class="card">
+      <h3>Comment-to-DM</h3>
+      <p class="sub">Targeting is stated in full, because an armed rule messages real people until it is switched off.</p>
+      <div class="row">
+        <div class="row-body">
+          <strong style="font-size:14px">Link request</strong>
+          <p class="auto-meta">Keywords: <code>link</code>, <code>where</code> · account-wide — matches comments on every post</p>
+          <p class="auto-stats">142 delivered · 118 read · 37 link clicks</p>
+        </div>
+        <span class="pill ok">Live · sending DMs</span>
+      </div>
+      <div class="row">
+        <div class="row-body">
+          <strong style="font-size:14px">Launch waitlist</strong>
+          <p class="auto-meta">Keywords: <code>waitlist</code> · scoped to one post</p>
+          <p class="auto-stats">0 delivered · 0 read · 0 link clicks</p>
+        </div>
+        <span class="pill mute">Off</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- States -->
+  <div class="panel" id="p-states" role="tabpanel" aria-labelledby="t-states" hidden>
+    <div class="card">
+      <h3>Unavailable is not empty</h3>
+      <p class="sub">The distinction the whole design turns on.</p>
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr><th>Situation</th><th>Reads as</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Queue read, nothing in it</td><td><span class="pill mute">Nothing scheduled</span></td></tr>
+            <tr><td>Queue could not be read</td><td><span class="pill warn">Unavailable — Zernio not responding</span></td></tr>
+            <tr><td>Provider not configured</td><td><span class="pill warn">Not set up — add the key</span></td></tr>
+            <tr><td>Metric the plan does not include</td><td><span class="pill mute">— (never estimated)</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="empty">
+      <p><strong>Nothing scheduled</strong></p>
+      <p class="hint">Build a post in Compose, set a time, and it publishes on its own.</p>
+    </div>
+
+    <p class="note">
+      Zernio is unreachable, so scheduling is off. Anything already scheduled is
+      unaffected — it is held on Zernio, not in this page.
+    </p>
+
+    <p class="errornote">
+      Instagram is connected to two different accounts. Reading from one,
+      publishing to another — reconnect one so both match.
+    </p>
+  </div>
+
+  <footer>
+    Built from <code>src/app/globals.css</code> and <code>src/components/ui.tsx</code>.
+    The pattern rules live in each plugin at
+    <code>skills/&lt;platform&gt;/references/artifact.md</code>.
+  </footer>
+</div>
+
+<script>
+  // Tabs — plain buttons, no library. Visibility via [hidden], per the host reset.
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function select(tab) {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  }
+  tabs.forEach((t) => t.addEventListener('click', () => select(t)));
+  tabs.forEach((t, i) =>
+    t.addEventListener('keydown', (e) => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      const next = tabs[(i + d + tabs.length) % tabs.length];
+      next.focus();
+      select(next);
+    }),
+  );
+
+  // Live counter against Instagram's real limit, with the 125-char fold called out.
+  const LIMIT = 2200, FOLD = 125;
+  const cap = document.getElementById('cap');
+  const count = document.getElementById('count');
+  const fold = document.getElementById('fold');
+  function tick() {
+    const n = cap.value.length;
+    count.textContent = n.toLocaleString() + ' / ' + LIMIT.toLocaleString();
+    count.classList.toggle('over', n > LIMIT);
+    fold.textContent =
+      n <= FOLD
+        ? 'all of it shows before the fold'
+        : (n - FOLD).toLocaleString() + ' characters sit past the fold';
+  }
+  cap.addEventListener('input', tick);
+  tick();
+
+  // Name the viewer's timezone. A schedule time without one is a support ticket.
+  try {
+    document.getElementById('tz').textContent =
+      Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (e) {
+    /* keep the generic label */
+  }
+</script>
