@@ -75,23 +75,25 @@ Get the Composio `log_id` first, then work through the failure modes in
 Meta permission gap, or a Composio project credential problem. These have
 different fixes; do not reconnect the account to solve a project-key 401.
 
-## 5. Show the result, don't just describe it
+## 5. Work through the Content Studio artifact
 
-In the **Claude app** or on claude.ai, publish an **Artifact** instead of a wall
-of text whenever the answer is a queue, a report, a set of drafts, or anything
-with more than a couple of rows. Use the Content Studio's own visual language so
-both surfaces read as one product, and lead with a **connector status strip** —
-Composio and Zernio, what each powers, and whether it is connected — because not
-knowing which provider is missing is the commonest confusion.
+In the **Claude app** or on claude.ai there is **one** artifact for this whole
+toolkit — a single **Content Studio** page covering Instagram, X and YouTube —
+and these skills are its backend. Do not publish an artifact per question:
+find the existing studio, refresh the part the user asked about, and republish
+it to the same URL.
 
-See [references/artifact.md](references/artifact.md) for the tokens, the
-components, and which shape to build for which request.
+Start from [references/content-studio.html](references/content-studio.html);
+the rules and the `DATA` contract are in
+[references/artifact.md](references/artifact.md).
 
-Default to a **snapshot**: fetch with your connectors, bake the data in, make
-the page interactive (tabs, filters, counters, editable drafts) but let actions
-come back through you. Only give a page live connector access when you have
-already observed a real request and response for every tool it calls, in this
-session — the type contract carries the call envelope, never a tool's argument
-names or result shape.
+You fetch with your connectors, then fill `DATA` and republish. Leave a key
+**out** when you did not fetch it and the section says "not loaded"; set it to
+`[]` when you fetched nothing and it says "nothing here" — those must never look
+alike. The page never calls a platform itself: its action is "Copy for Claude".
+
+Lead with the connector strip — Composio and Zernio, what each powers, whether
+it is connected — because not knowing which provider is missing is the
+commonest confusion.
 
 In a terminal there is no artifact viewer: answer in text.

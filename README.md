@@ -396,38 +396,44 @@ Three YouTube constraints the surfaces state rather than hide:
 A YouTube thumbnail is URL-only (`thumbnailUrl` has no file equivalent), which
 is one of the two reasons the app needs Cloudinary.
 
-## 5. Artifacts — the skills render a UI, not a wall of text
+## 5. The Content Studio artifact — one page, skills as its backend
 
-In the Claude app, `/instagram`, `/youtube` and `/x` publish an **Artifact**
-rather than describing a queue in prose: the same tokens and components as the
-web app, so both surfaces read as one product. In a terminal there is no
-artifact viewer, so the skills answer in text instead.
+In the Claude app, the plugins do not answer with a wall of text and they do not
+scatter an artifact per question. There is **one** artifact — a single **Content
+Studio** page covering Instagram, X and YouTube — and the skills are its
+backend. Ask about the queue and Claude refreshes that section and republishes
+the same page.
 
-Every artifact leads with a **connector strip** — Composio and Zernio, what each
-powers, and whether it is connected — because not knowing *which* provider is
-missing is the commonest confusion. A missing connector greys out its section
-with a reason; "not connected" and "nothing scheduled" never look alike.
+```
+plugins/<plugin>/skills/<platform>/references/
+  content-studio.html   the page: platform switcher, sections, all components
+  artifact.md           the loop, the DATA contract, the rules
+```
 
-Two modes:
+The page renders entirely from one `DATA` object at the bottom of the file. A
+skill fetches with its connectors, fills `DATA`, and republishes to the same
+URL — so the studio is always current and there is only ever one of it.
 
-| | Snapshot (default) | Live |
-|---|---|---|
-| Data | Claude fetches it, bakes it into the page | The page calls connectors itself via the `mcp` capability |
-| Interactive | Yes — tabs, filters, counters, editable drafts | Yes, plus refresh without another turn |
-| Publishes to a platform | **Never.** Buttons say "Copy for Claude" | Only with tools whose real request/response was observed first |
-| Requires | Nothing | An observed request/response per tool, in-session |
+The contract that matters most: **absent is not empty.** A key you did not fetch
+is left out and the section says "not loaded yet"; a key you fetched with nothing
+in it is `[]` and the section says "nothing here". Same for the queue —
+`available: false` is an outage, not an empty queue. Those states must never
+look alike, which is the same discipline the web app follows.
 
-The precondition on Live mode is not optional: the runtime contract carries the
-call envelope but never a tool's argument names or result encoding, so a page
-that calls an unobserved tool is guessing. Default to Snapshot.
+Every refresh leads with the **connector strip**: Composio and Zernio, what each
+powers, and whether it is connected, because not knowing which provider is
+missing is the commonest confusion.
 
-Rules and tokens live per plugin in `skills/<platform>/references/artifact.md`,
-next to a working `artifact-template.html` carrying every component and state —
-the skills adapt that rather than redesigning each time, which is what keeps
-successive artifacts consistent with each other and with the app.
+The studio is interactive locally — tabs, per-platform character limits with
+Instagram's 125-character fold, editable reply drafts, relative times in the
+viewer's timezone — but it **never calls a platform**. Its action is "Copy for
+Claude"; you perform the change. Live connector access via the `mcp` capability
+is possible only for tools whose real request and response were observed first,
+since the runtime contract carries the call envelope but never a tool's argument
+names or result encoding.
 
-**No credential ever goes in the page** — artifacts are shareable HTML; they show
-connection state, never a key.
+**No credential ever goes in the page** — artifacts are shareable HTML; the
+studio shows connection state, never a key.
 
 ## 6. Zernio — the second provider
 

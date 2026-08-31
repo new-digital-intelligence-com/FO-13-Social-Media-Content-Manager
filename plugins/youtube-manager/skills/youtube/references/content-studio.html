@@ -1,0 +1,496 @@
+<title>Content Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+
+<!--
+  ONE artifact for the whole studio. Every platform and every capability lives
+  here; the skills are the backend.
+
+  HOW TO UPDATE IT
+  Replace the DATA object at the bottom and republish to the SAME url. Never
+  publish a second studio artifact — one url, updated in place, is the point.
+  Leave a section's key absent and the section renders its own "not loaded yet"
+  state rather than an empty one that reads like "nothing there".
+-->
+
+<style>
+  :root {
+    --brand: #fe0100;
+    --brand-ink: #c40100;
+    --ground: #f7f7f8;
+    --surface: #ffffff;
+    --ink: #101014;
+    --muted: rgba(0, 0, 0, 0.55);
+    --faint: rgba(0, 0, 0, 0.45);
+    --hairline: rgba(0, 0, 0, 0.10);
+    --inset: rgba(0, 0, 0, 0.03);
+    --ok-bg: #ecfdf5;   --ok-ink: #047857;   --ok-ring: #a7f3d0;
+    --warn-bg: #fffbeb; --warn-ink: #92400e; --warn-ring: #fde68a;
+    --bad-bg: #fef2f2;  --bad-ink: #b91c1c;  --bad-ring: #fecaca;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  /* Only tokens change per theme — never a component rule. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #141416; --surface: #1c1c1f; --ink: #f2f2f4;
+      --muted: rgba(255,255,255,.60); --faint: rgba(255,255,255,.45);
+      --hairline: rgba(255,255,255,.12); --inset: rgba(255,255,255,.04);
+      --ok-bg:#052e23; --ok-ink:#6ee7b7; --ok-ring:#065f46;
+      --warn-bg:#2e2205; --warn-ink:#fcd34d; --warn-ring:#78500a;
+      --bad-bg:#2e0b0b; --bad-ink:#fca5a5; --bad-ring:#7f1d1d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141416; --surface: #1c1c1f; --ink: #f2f2f4;
+    --muted: rgba(255,255,255,.60); --faint: rgba(255,255,255,.45);
+    --hairline: rgba(255,255,255,.12); --inset: rgba(255,255,255,.04);
+    --ok-bg:#052e23; --ok-ink:#6ee7b7; --ok-ring:#065f46;
+    --warn-bg:#2e2205; --warn-ink:#fcd34d; --warn-ring:#78500a;
+    --bad-bg:#2e0b0b; --bad-ink:#fca5a5; --bad-ring:#7f1d1d;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: var(--sans); line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 28px 20px 72px; display: flex; flex-direction: column; gap: 18px; }
+
+  .topbar { display: flex; flex-wrap: wrap; gap: 14px; align-items: baseline; justify-content: space-between; }
+  .brandmark { display: flex; align-items: baseline; gap: 9px; }
+  .brandmark .dotmark { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); }
+  h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  .stamp { font-family: var(--mono); font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  /* Connectors — the strip that says which provider is missing and why it matters. */
+  .connectors { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .conn { display: flex; gap: 10px; align-items: flex-start; background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px; padding: 12px 14px; }
+  .led { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: none; }
+  .led.on { background: #059669; box-shadow: 0 0 0 3px var(--ok-bg); }
+  .led.off { border: 1.5px solid var(--faint); }
+  .conn b { font-size: 13.5px; font-weight: 600; }
+  .conn .does { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .conn .st { font-family: var(--mono); font-size: 10.5px; margin-top: 5px; }
+  .conn .st.on { color: var(--ok-ink); } .conn .st.off { color: var(--warn-ink); }
+
+  .switch { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sw {
+    font: inherit; font-size: 13px; font-weight: 500; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 10px; padding: 7px 13px; cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .sw:hover { color: var(--ink); border-color: var(--brand); }
+  .sw[aria-selected="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .sw:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .sections { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--hairline); padding-bottom: 9px; }
+  .sec { font: inherit; font-size: 13px; color: var(--muted); background: none; border: none; border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+  .sec:hover { background: var(--inset); color: var(--ink); }
+  .sec[aria-selected="true"] { color: var(--ink); font-weight: 600; background: var(--inset); }
+  .sec:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 3px; font-size: 14.5px; font-weight: 600; }
+  .card .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 13px; }
+  .stack { display: flex; flex-direction: column; gap: 13px; }
+
+  .pill { display: inline-block; font-size: 10.5px; font-weight: 500; padding: 2px 9px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok-ink); border-color: var(--ok-ring); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-ring); }
+  .pill.bad { background: var(--bad-bg); color: var(--bad-ink); border-color: var(--bad-ring); }
+  .pill.mute { background: var(--inset); color: var(--muted); border-color: var(--hairline); }
+
+  .note, .err { border-radius: 12px; padding: 10px 13px; font-size: 12.5px; border: 1px solid; margin: 0; }
+  .note { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-ring); }
+  .err { background: var(--bad-bg); color: var(--bad-ink); border-color: var(--bad-ring); }
+
+  .empty { border: 1px dashed var(--hairline); border-radius: 16px; padding: 34px 20px; text-align: center; }
+  .empty b { font-size: 14px; } .empty p { margin: 4px 0 0; color: var(--faint); font-size: 12.5px; }
+
+  .grouplabel { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin: 2px 0 1px; }
+  .grouphint { color: var(--muted); font-size: 12px; margin: 0 0 6px; }
+  .row { display: flex; gap: 13px; align-items: flex-start; justify-content: space-between; padding: 11px 0; border-top: 1px solid var(--hairline); }
+  .row:first-of-type { border-top: none; }
+  .row .cap { font-size: 13px; margin: 0 0 3px; }
+  .row .when { font-family: var(--mono); font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  .stats { display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+  .stat .n { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .stat .l { font-size: 12px; color: var(--faint); }
+
+  .slot { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--inset); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; }
+  .slot .t { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .slot .c { color: var(--faint); font-size: 10.5px; margin-left: 7px; }
+
+  textarea { width: 100%; font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--hairline); border-radius: 11px; padding: 10px 12px; resize: vertical; min-height: 84px; }
+  textarea:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .counts { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .counts .over { color: var(--bad-ink); font-weight: 500; }
+
+  .btn { font: inherit; font-size: 13px; font-weight: 500; border-radius: 11px; padding: 7px 15px; cursor: pointer; transition: background .15s, border-color .15s; }
+  .btn.primary { background: var(--brand); color: #fff; border: 1px solid var(--brand); }
+  .btn.primary:hover { background: var(--brand-ink); border-color: var(--brand-ink); }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
+  .btn.ghost:hover { border-color: var(--brand); }
+  .btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; align-items: center; }
+  .hint { color: var(--faint); font-size: 11.5px; margin: 7px 0 0; }
+
+  .scroller { overflow-x: auto; }
+  code { font-family: var(--mono); font-size: 11.5px; background: var(--inset); padding: 1px 5px; border-radius: 5px; }
+  footer { color: var(--faint); font-size: 12px; border-top: 1px solid var(--hairline); padding-top: 14px; }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brandmark">
+      <span class="dotmark" aria-hidden="true"></span>
+      <h1>Content Studio</h1>
+    </div>
+    <span class="stamp" id="stamp"></span>
+  </div>
+
+  <div class="connectors" id="connectors"></div>
+
+  <div class="switch" role="tablist" aria-label="Platform" id="platforms"></div>
+  <div class="sections" role="tablist" aria-label="Section" id="sections"></div>
+  <div id="body" class="stack"></div>
+
+  <footer>
+    One studio, updated in place. Ask Claude for what you need and this page is
+    rebuilt with it — the skills behind <code>/instagram</code>,
+    <code>/x</code> and <code>/youtube</code> are what fill it.
+  </footer>
+</div>
+
+<script>
+/* ────────────────────────────────────────────────────────────────────────────
+   DATA — the only thing that changes between republishes.
+
+   Every key is optional. An ABSENT section renders "not loaded yet"; a section
+   present but empty renders "nothing here". Those must never look alike, which
+   is why `undefined` and `[]` mean different things throughout.
+   ──────────────────────────────────────────────────────────────────────────── */
+const DATA = {
+  updated: null,                 // ISO string, or null while never loaded
+  connectors: [
+    { name: "Composio", does: "Posts, comments, DMs, insights — the platform APIs.", connected: false },
+    { name: "Zernio",   does: "Scheduling, queue slots, comment-to-DM, cross-post, measured analytics.", connected: false },
+  ],
+  platforms: [
+    { id: "instagram", label: "Instagram", handle: null, connected: false },
+    { id: "x",         label: "X",         handle: null, connected: false },
+    { id: "youtube",   label: "YouTube",   handle: null, connected: false },
+  ],
+  // Studio-wide warnings — e.g. reads and writes on different accounts.
+  alerts: [],
+  // Per platform. Omit a key entirely when that data was not fetched.
+  data: {
+    instagram: {},
+    x: {},
+    youtube: {},
+  },
+};
+
+/* Which sections exist per platform, and their limits. */
+const SECTIONS = {
+  instagram: ["Overview", "Queue", "Compose", "Insights", "Engage", "Automations"],
+  x:         ["Overview", "Compose", "Engage", "Monitor"],
+  youtube:   ["Overview", "Queue", "Compose", "Insights", "Engage"],
+};
+const LIMITS = { instagram: 2200, x: 280, youtube: 5000 };
+const FOLD = { instagram: 125 };
+
+const el = (t, c, txt) => { const n = document.createElement(t); if (c) n.className = c; if (txt != null) n.textContent = txt; return n; };
+const esc = (s) => String(s == null ? "" : s);
+
+let platform = null;
+let section = null;
+
+/* ── Connectors ──────────────────────────────────────────────────────────── */
+function renderConnectors() {
+  const host = document.getElementById("connectors");
+  host.replaceChildren();
+  for (const c of DATA.connectors || []) {
+    const box = el("div", "conn");
+    box.append(el("span", "led " + (c.connected ? "on" : "off")));
+    const t = el("div");
+    t.append(el("b", null, c.name), el("div", "does", c.does || ""));
+    t.append(el("div", "st " + (c.connected ? "on" : "off"),
+      c.connected ? "● Connected" : "○ Not connected — its features are unavailable"));
+    box.append(t);
+    host.append(box);
+  }
+}
+
+/* ── Switchers ───────────────────────────────────────────────────────────── */
+function renderPlatforms() {
+  const host = document.getElementById("platforms");
+  host.replaceChildren();
+  const usable = (DATA.platforms || []).filter((p) => p.connected);
+  const list = usable.length ? usable : DATA.platforms || [];
+  if (!platform && list.length) platform = list[0].id;
+  for (const p of list) {
+    const b = el("button", "sw", p.handle ? `${p.label} · ${p.handle}` : p.label);
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(p.id === platform));
+    b.disabled = !p.connected;
+    if (!p.connected) b.title = `${p.label} is not connected`;
+    b.addEventListener("click", () => { platform = p.id; section = null; render(); });
+    host.append(b);
+  }
+}
+
+function renderSections() {
+  const host = document.getElementById("sections");
+  host.replaceChildren();
+  const names = SECTIONS[platform] || [];
+  if (!section) section = names[0];
+  for (const s of names) {
+    const b = el("button", "sec", s);
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(s === section));
+    b.addEventListener("click", () => { section = s; render(); });
+    host.append(b);
+  }
+}
+
+/* ── Shared blocks ───────────────────────────────────────────────────────── */
+function notLoaded(what) {
+  const c = el("div", "empty");
+  c.append(el("b", null, `${what} not loaded`));
+  c.append(el("p", null, `Ask Claude for it and this page is rebuilt with it. This is not the same as "${what.toLowerCase()} is empty".`));
+  return c;
+}
+function nothing(title, hint) {
+  const c = el("div", "empty");
+  c.append(el("b", null, title));
+  if (hint) c.append(el("p", null, hint));
+  return c;
+}
+function card(title, sub) {
+  const c = el("div", "card");
+  if (title) c.append(el("h3", null, title));
+  if (sub) c.append(el("p", "sub", sub));
+  return c;
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+function overview(d) {
+  const out = [];
+  if (!d.stats) return [notLoaded("Overview")];
+  const c = card("At a glance", d.window || null);
+  const g = el("div", "stats");
+  for (const s of d.stats) {
+    const b = el("div", "stat");
+    b.append(el("div", "n", s.value == null ? "—" : String(s.value)));
+    b.append(el("div", "l", s.label));
+    g.append(b);
+  }
+  c.append(g);
+  if (d.statsNote) c.append(Object.assign(el("p", "note", d.statsNote), { style: "margin-top:12px" }));
+  out.push(c);
+  return out;
+}
+
+function queue(d) {
+  if (!d.queue) return [notLoaded("Queue")];
+  if (d.queue.available === false) {
+    const c = card("Queue unavailable");
+    c.append(el("p", "note", d.queue.detail || "The queue could not be read, so what is scheduled is unknown. This is not an empty queue."));
+    return [c];
+  }
+  const posts = d.queue.posts || [];
+  if (!posts.length) return [nothing("Nothing scheduled", "Draft something in Compose and give it a time.")];
+
+  const c = card("Publishing queue", "Times in " + tz());
+  const groups = [
+    ["Scheduled", "These publish on their own at the time shown.", (p) => p.status === "scheduled"],
+    ["Drafts", "No date set — these will never publish until one is.", (p) => p.status === "draft"],
+    ["Done", "Published, or failed after the provider's retries.", (p) => p.status === "published" || p.status === "failed"],
+  ];
+  for (const [label, hint, test] of groups) {
+    const rows = posts.filter(test);
+    if (!rows.length) continue;
+    c.append(el("p", "grouplabel", label), el("p", "grouphint", hint));
+    for (const p of rows) {
+      const r = el("div", "row");
+      const left = el("div");
+      left.append(el("p", "cap", p.caption || "No caption"));
+      left.append(el("span", "when", whenLabel(p)));
+      r.append(left, el("span", "pill " + pillTone(p.status), pillText(p)));
+      c.append(r);
+    }
+  }
+  return [c];
+}
+
+function pillTone(s) { return s === "published" ? "ok" : s === "failed" ? "bad" : s === "draft" ? "mute" : "ok"; }
+function pillText(p) {
+  if (p.status === "published") return "Published";
+  if (p.status === "failed") return "Failed";
+  if (p.status === "draft") return "Draft · will not publish";
+  return "Scheduled · publishes automatically";
+}
+function whenLabel(p) {
+  if (!p.publishAt) return "No date";
+  const d = new Date(p.publishAt);
+  if (isNaN(d)) return esc(p.publishAt);
+  const mins = Math.round((d.getTime() - Date.now()) / 60000);
+  const rel = mins < 0 ? "overdue" : mins < 60 ? `in ${mins} min` : mins < 1440 ? `in ${Math.round(mins / 60)} h` : `in ${Math.round(mins / 1440)} d`;
+  return d.toLocaleString() + " · " + rel;
+}
+function tz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return "your timezone"; } }
+
+function compose(d) {
+  const limit = LIMITS[platform] || 2200;
+  const c = card("Draft", `Counted against ${platform}'s real limit of ${limit.toLocaleString()} characters.`);
+  const ta = el("textarea");
+  ta.value = (d.draft && d.draft.text) || "";
+  ta.setAttribute("aria-label", "Draft text");
+  const counts = el("div", "counts");
+  const n = el("span"), fold = el("span");
+  counts.append(n, fold);
+  const tick = () => {
+    const len = ta.value.length;
+    n.textContent = len.toLocaleString() + " / " + limit.toLocaleString();
+    n.className = len > limit ? "over" : "";
+    const f = FOLD[platform];
+    fold.textContent = !f ? "" : len <= f ? "all of it shows before the fold" : `${(len - f).toLocaleString()} characters past the fold`;
+  };
+  ta.addEventListener("input", tick);
+  c.append(ta, counts);
+
+  const acts = el("div", "acts");
+  const copy = el("button", "btn primary", "Copy for Claude");
+  copy.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(ta.value); copy.textContent = "Copied"; setTimeout(() => (copy.textContent = "Copy for Claude"), 1600); }
+    catch (e) { copy.textContent = "Select and copy manually"; }
+  });
+  acts.append(copy);
+  c.append(acts);
+  c.append(el("p", "hint", "Nothing here reaches " + platform + ". This page never publishes — paste the text back to Claude and ask it to schedule or post."));
+  setTimeout(tick, 0);
+  return [c];
+}
+
+function insights(d) {
+  const out = [];
+  if (d.stats) out.push(...overview(d));
+  if (!d.bestTime) { out.push(notLoaded("Best times")); return out; }
+  const c = card("Best times to post", "Measured from your own engagement, converted to " + tz() + ".");
+  if (!d.bestTime.length) {
+    c.append(el("p", "sub", "No published posts with engagement yet, so there is nothing to measure."));
+    return [...out, c];
+  }
+  const thin = d.bestTime.every((s) => (s.post_count || 0) < 3);
+  if (thin) c.append(Object.assign(el("p", "note", "Every slot rests on fewer than 3 posts. That is raw data, not a recommendation."), { style: "margin-bottom:10px" }));
+  const list = el("div"); list.style.cssText = "display:flex;flex-direction:column;gap:6px";
+  for (const s of d.bestTime.slice(0, 6)) {
+    const row = el("div", "slot");
+    row.append(el("span", "t", s.label));
+    const v = el("span");
+    v.append(document.createTextNode((s.value != null ? s.value : "—") + " avg engagement"));
+    v.append(el("span", "c", (s.post_count || 0) + " post" + ((s.post_count === 1) ? "" : "s")));
+    row.append(v);
+    list.append(row);
+  }
+  c.append(list);
+  return [...out, c];
+}
+
+function engage(d) {
+  if (!d.engage) return [notLoaded("Comments and messages")];
+  if (!d.engage.length) return [nothing("Nothing waiting", "No comments or messages need a reply right now.")];
+  const c = card("Needs a reply", "Drafted in your brand voice. Edit here, then paste back to Claude to send.");
+  for (const item of d.engage) {
+    const r = el("div", "row");
+    const left = el("div");
+    left.append(el("p", "cap", item.from ? `${item.from}: ${item.text}` : item.text));
+    if (item.reply) {
+      const ta = el("textarea"); ta.value = item.reply; ta.rows = 2;
+      ta.style.marginTop = "7px";
+      ta.setAttribute("aria-label", "Draft reply");
+      left.append(ta);
+    }
+    r.append(left);
+    if (item.tag) r.append(el("span", "pill " + (item.tone || "mute"), item.tag));
+    c.append(r);
+  }
+  return [c];
+}
+
+function automations(d) {
+  if (!d.automations) return [notLoaded("Automations")];
+  if (!d.automations.length) return [nothing("No automations", "Ask Claude to set one up — a keyword in comments triggers a DM.")];
+  const c = card("Comment-to-DM", "An armed rule messages real people, unattended, until it is switched off.");
+  for (const a of d.automations) {
+    const r = el("div", "row");
+    const left = el("div");
+    left.append(el("p", "cap", a.name || "Untitled"));
+    left.append(el("span", "when", `Keywords: ${(a.keywords || []).join(", ") || "—"} · ${a.scope || "account-wide"}`));
+    if (a.stats) {
+      const s = el("p", "when", `${a.stats.delivered || 0} delivered · ${a.stats.read || 0} read · ${a.stats.clicks || 0} clicks`);
+      s.style.marginTop = "3px"; left.append(s);
+    }
+    r.append(left, el("span", "pill " + (a.active ? "ok" : "mute"), a.active ? "Live · sending DMs" : "Off"));
+    c.append(r);
+  }
+  return [c];
+}
+
+function monitor(d) {
+  if (!d.monitor) return [notLoaded("Monitoring")];
+  const c = card("Mentions and keywords", "X has no mentions endpoint and recent search reaches about 7 days — \"no results\" means none in that window.");
+  if (!d.monitor.length) { c.append(el("p", "sub", "Nothing in the search window.")); return [c]; }
+  for (const m of d.monitor) {
+    const r = el("div", "row");
+    const left = el("div");
+    left.append(el("p", "cap", m.text));
+    left.append(el("span", "when", m.when || ""));
+    r.append(left);
+    c.append(r);
+  }
+  return [c];
+}
+
+/* ── Render ──────────────────────────────────────────────────────────────── */
+function render() {
+  renderConnectors();
+  renderPlatforms();
+  renderSections();
+
+  const stamp = document.getElementById("stamp");
+  stamp.textContent = DATA.updated
+    ? "Updated " + new Date(DATA.updated).toLocaleString()
+    : "Never loaded — ask Claude to fill it";
+
+  const body = document.getElementById("body");
+  body.replaceChildren();
+
+  for (const a of DATA.alerts || []) {
+    body.append(el("p", a.level === "error" ? "err" : "note", a.text));
+  }
+
+  const p = (DATA.platforms || []).find((x) => x.id === platform);
+  if (p && !p.connected) {
+    const c = card(p.label + " is not connected");
+    c.append(el("p", "sub", "Connect it and ask Claude to refresh this studio."));
+    body.append(c);
+    return;
+  }
+
+  const d = (DATA.data && DATA.data[platform]) || {};
+  const fn = { Overview: overview, Queue: queue, Compose: compose, Insights: insights, Engage: engage, Automations: automations, Monitor: monitor }[section];
+  const blocks = fn ? fn(d) : [notLoaded(section || "Section")];
+  for (const b of blocks) body.append(b);
+}
+
+render();
+</script>
