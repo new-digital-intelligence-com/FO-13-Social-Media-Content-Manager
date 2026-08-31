@@ -44,17 +44,31 @@ DATA = {
   alerts:     [{ level: "warn"|"error", text }],    // studio-wide problems
   data: {
     instagram: {
-      stats:       [{ label, value }],       // value null renders "—", never 0
-      window:      "last 30 days",
-      statsNote:   "why something is missing",
-      queue:       { available: true, posts: [{ caption, publishAt, status }] },
-      draft:       { text },
-      bestTime:    [{ label: "Tue 19:00", value, post_count }],
-      engage:      [{ from, text, reply, tag, tone }],
+      overview:    { stats: [{label, value}], window, note },
+      posts:       [{ caption, thumbnail, stats, when }],   // also reels, stories
+      reels:       [...], stories: [...],
+      messages:    [{ from, text, when, reply, tag, tone }],
+      insights:    { stats, bestTime: [{label, value, post_count}] },
+      compose:     { text },
+      queue:       { available: true, posts: [{caption, publishAt, status}] },
+      monitor:     [{ author, text, on, reply, tag, tone }],
+      grow:        [{ handle, why, followers, verified }],
       automations: [{ name, keywords, scope, active, stats }],
-      monitor:     [{ text, when }],
+      crosspost:   { targets: [{ platform, label, text, note, blocked }] },
     },
-    x: { ... }, youtube: { ... },
+    x: {
+      overview, compose, messages, grow,            // same shapes as above
+      timeline: [{ author, text, when, stats }],    // also `search`
+      lists:    [{ name, description, count }],
+    },
+    youtube: {
+      overview, compose, queue, insights, grow, search,
+      videos:    [{ title, thumbnail, stats, when }],
+      studio:    { video, noTranscript, outputs: { Summary: "...", Chapters: "..." } },
+      upload:    { title, description, tags: [], visibility },
+      comments:  [{ author, text, on, reply, tag }],
+      playlists: [{ name, description, count }],
+    },
   },
 }
 ```

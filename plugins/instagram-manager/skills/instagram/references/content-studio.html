@@ -4,18 +4,22 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 
 <!--
-  ONE artifact for the whole studio. Every platform and every capability lives
-  here; the skills are the backend.
+  ONE artifact for the whole studio. Every platform and every section the web
+  app has lives here; the skills are the backend.
 
-  HOW TO UPDATE IT
-  Replace the DATA object at the bottom and republish to the SAME url. Never
-  publish a second studio artifact — one url, updated in place, is the point.
-  Leave a section's key absent and the section renders its own "not loaded yet"
-  state rather than an empty one that reads like "nothing there".
+  TO UPDATE: replace the DATA object at the bottom and republish to the SAME
+  url. Never publish a second studio.
+
+  ABSENT IS NOT EMPTY. Leave a key out and its section says "not loaded yet";
+  set it to [] and the section says "nothing here". Never conflate them.
 -->
 
 <style>
   :root {
+    /* Light-only, deliberately: the web app pins color-scheme: light, and this
+       page matches the app rather than following the viewer's theme. Every
+       colour is painted explicitly so it holds on a dark host ground. */
+    color-scheme: light;
     --brand: #fe0100;
     --brand-ink: #c40100;
     --ground: #f7f7f8;
@@ -28,30 +32,20 @@
     --ok-bg: #ecfdf5;   --ok-ink: #047857;   --ok-ring: #a7f3d0;
     --warn-bg: #fffbeb; --warn-ink: #92400e; --warn-ring: #fde68a;
     --bad-bg: #fef2f2;  --bad-ink: #b91c1c;  --bad-ring: #fecaca;
-    /* Light-only, deliberately: the Content Studio web app pins
-       color-scheme: light, and this page must match it rather than follow
-       the viewer's theme. Every colour is painted explicitly so the page
-       holds on a dark host ground. */
-    color-scheme: light;
     --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   }
 
   * { box-sizing: border-box; }
-  body {
-    background: var(--ground); color: var(--ink);
-    font-family: var(--sans); line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 28px 20px 72px; display: flex; flex-direction: column; gap: 18px; }
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 26px 20px 72px; display: flex; flex-direction: column; gap: 16px; }
 
   .topbar { display: flex; flex-wrap: wrap; gap: 14px; align-items: baseline; justify-content: space-between; }
   .brandmark { display: flex; align-items: baseline; gap: 9px; }
-  .brandmark .dotmark { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); }
-  h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  .dotmark { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); }
+  h1 { font-size: 21px; font-weight: 600; letter-spacing: -.02em; margin: 0; }
   .stamp { font-family: var(--mono); font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
 
-  /* Connectors — the strip that says which provider is missing and why it matters. */
   .connectors { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
   .conn { display: flex; gap: 10px; align-items: flex-start; background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px; padding: 12px 14px; }
   .led { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: none; }
@@ -63,21 +57,16 @@
   .conn .st.on { color: var(--ok-ink); } .conn .st.off { color: var(--warn-ink); }
 
   .switch { display: flex; flex-wrap: wrap; gap: 6px; }
-  .sw {
-    font: inherit; font-size: 13px; font-weight: 500; color: var(--muted);
-    background: var(--surface); border: 1px solid var(--hairline);
-    border-radius: 10px; padding: 7px 13px; cursor: pointer;
-    transition: background .15s, color .15s, border-color .15s;
-  }
-  .sw:hover { color: var(--ink); border-color: var(--brand); }
-  .sw[aria-selected="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
-  .sw:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .sw { font: inherit; font-size: 13px; font-weight: 500; color: var(--muted); background: var(--surface); border: 1px solid var(--hairline); border-radius: 10px; padding: 7px 13px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+  .sw:hover:not(:disabled) { color: var(--ink); border-color: var(--brand); }
+  .sw[aria-selected="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .sw:disabled { opacity: .45; cursor: not-allowed; }
+  .sw:focus-visible, .sec:focus-visible, .btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
-  .sections { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--hairline); padding-bottom: 9px; }
-  .sec { font: inherit; font-size: 13px; color: var(--muted); background: none; border: none; border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+  .sections { display: flex; flex-wrap: wrap; gap: 3px; border-bottom: 1px solid var(--hairline); padding-bottom: 9px; }
+  .sec { font: inherit; font-size: 12.5px; color: var(--muted); background: none; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
   .sec:hover { background: var(--inset); color: var(--ink); }
   .sec[aria-selected="true"] { color: var(--ink); font-weight: 600; background: var(--inset); }
-  .sec:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
   .card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; padding: 18px 20px; }
   .card h3 { margin: 0 0 3px; font-size: 14.5px; font-weight: 600; }
@@ -94,7 +83,7 @@
   .note { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-ring); }
   .err { background: var(--bad-bg); color: var(--bad-ink); border-color: var(--bad-ring); }
 
-  .empty { border: 1px dashed var(--hairline); border-radius: 16px; padding: 34px 20px; text-align: center; }
+  .empty { border: 1px dashed var(--hairline); border-radius: 16px; padding: 32px 20px; text-align: center; }
   .empty b { font-size: 14px; } .empty p { margin: 4px 0 0; color: var(--faint); font-size: 12.5px; }
 
   .grouplabel { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin: 2px 0 1px; }
@@ -103,30 +92,38 @@
   .row:first-of-type { border-top: none; }
   .row .cap { font-size: 13px; margin: 0 0 3px; }
   .row .when { font-family: var(--mono); font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .row .who { font-weight: 600; font-size: 13px; }
 
-  .stats { display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+  .stats { display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); }
   .stat .n { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
   .stat .l { font-size: 12px; color: var(--faint); }
+
+  .media { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .tile { border: 1px solid var(--hairline); border-radius: 12px; overflow: hidden; background: var(--surface); display: flex; flex-direction: column; }
+  .tile .thumb { aspect-ratio: 4 / 5; background: var(--inset); background-size: cover; background-position: center; }
+  .tile .meta { padding: 9px 10px; display: flex; flex-direction: column; gap: 3px; }
+  .tile .t { font-size: 12px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tile .s { font-family: var(--mono); font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
 
   .slot { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--inset); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; }
   .slot .t { font-weight: 500; font-variant-numeric: tabular-nums; }
   .slot .c { color: var(--faint); font-size: 10.5px; margin-left: 7px; }
 
-  textarea { width: 100%; font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--hairline); border-radius: 11px; padding: 10px 12px; resize: vertical; min-height: 84px; }
-  textarea:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+  textarea, input[type="text"] { width: 100%; font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--hairline); border-radius: 11px; padding: 10px 12px; }
+  textarea { resize: vertical; min-height: 84px; }
+  textarea:focus-visible, input:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+  label.fl { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted); margin: 10px 0 4px; }
   .counts { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
-  .counts .over { color: var(--bad-ink); font-weight: 500; }
+  .counts .over { color: var(--bad-ink); font-weight: 600; }
 
   .btn { font: inherit; font-size: 13px; font-weight: 500; border-radius: 11px; padding: 7px 15px; cursor: pointer; transition: background .15s, border-color .15s; }
   .btn.primary { background: var(--brand); color: #fff; border: 1px solid var(--brand); }
   .btn.primary:hover { background: var(--brand-ink); border-color: var(--brand-ink); }
   .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
   .btn.ghost:hover { border-color: var(--brand); }
-  .btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
   .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; align-items: center; }
   .hint { color: var(--faint); font-size: 11.5px; margin: 7px 0 0; }
 
-  .scroller { overflow-x: auto; }
   code { font-family: var(--mono); font-size: 11.5px; background: var(--inset); padding: 1px 5px; border-radius: 5px; }
   footer { color: var(--faint); font-size: 12px; border-top: 1px solid var(--hairline); padding-top: 14px; }
   [hidden] { display: none !important; }
@@ -135,36 +132,71 @@
 
 <div class="wrap">
   <div class="topbar">
-    <div class="brandmark">
-      <span class="dotmark" aria-hidden="true"></span>
-      <h1>Content Studio</h1>
-    </div>
+    <div class="brandmark"><span class="dotmark" aria-hidden="true"></span><h1>Content Studio</h1></div>
     <span class="stamp" id="stamp"></span>
   </div>
-
   <div class="connectors" id="connectors"></div>
-
   <div class="switch" role="tablist" aria-label="Platform" id="platforms"></div>
   <div class="sections" role="tablist" aria-label="Section" id="sections"></div>
   <div id="body" class="stack"></div>
-
   <footer>
-    One studio, updated in place. Ask Claude for what you need and this page is
-    rebuilt with it — the skills behind <code>/instagram</code>,
-    <code>/x</code> and <code>/youtube</code> are what fill it.
+    One studio, updated in place — the same sections as the Content Studio web
+    app. Ask Claude for a section and this page is rebuilt with it; the skills
+    behind <code>/instagram</code>, <code>/x</code> and <code>/youtube</code> fill it.
   </footer>
 </div>
 
 <script>
 /* ────────────────────────────────────────────────────────────────────────────
-   DATA — the only thing that changes between republishes.
+   SECTIONS — one per tab in the web app, minus "Ask AI" (this chat is that).
+   `key` is the DATA key; `as` picks the renderer.
+   ──────────────────────────────────────────────────────────────────────────── */
+const SECTIONS = {
+  instagram: [
+    { name: "Overview",   key: "overview",    as: "stats"    },
+    { name: "Posts",      key: "posts",       as: "media"    },
+    { name: "Reels",      key: "reels",       as: "media"    },
+    { name: "Stories",    key: "stories",     as: "media"    },
+    { name: "Messages",   key: "messages",    as: "threads"  },
+    { name: "Insights",   key: "insights",    as: "insights" },
+    { name: "Compose",    key: "compose",     as: "compose"  },
+    { name: "Queue",      key: "queue",       as: "queue"    },
+    { name: "Monitor",    key: "monitor",     as: "triage"   },
+    { name: "Grow",       key: "grow",        as: "people"   },
+    { name: "Automation", key: "automations", as: "autos"    },
+    { name: "Cross-post", key: "crosspost",   as: "cross"    },
+  ],
+  x: [
+    { name: "Overview", key: "overview", as: "stats"   },
+    { name: "Compose",  key: "compose",  as: "compose" },
+    { name: "Timeline", key: "timeline", as: "feed"    },
+    { name: "Search",   key: "search",   as: "feed"    },
+    { name: "Lists",    key: "lists",    as: "coll"    },
+    { name: "Grow",     key: "grow",     as: "people"  },
+    { name: "Messages", key: "messages", as: "threads" },
+  ],
+  youtube: [
+    { name: "Overview",  key: "overview",  as: "stats"    },
+    { name: "Videos",    key: "videos",    as: "media"    },
+    { name: "AI Studio", key: "studio",    as: "studio"   },
+    { name: "Upload",    key: "upload",    as: "upload"   },
+    { name: "Comments",  key: "comments",  as: "triage"   },
+    { name: "Playlists", key: "playlists", as: "coll"     },
+    { name: "Analytics", key: "insights",  as: "insights" },
+    { name: "Grow",      key: "grow",      as: "people"   },
+    { name: "Search",    key: "search",    as: "feed"     },
+    { name: "Queue",     key: "queue",     as: "queue"    },
+  ],
+};
 
-   Every key is optional. An ABSENT section renders "not loaded yet"; a section
-   present but empty renders "nothing here". Those must never look alike, which
-   is why `undefined` and `[]` mean different things throughout.
+const LIMITS = { instagram: 2200, x: 280, youtube: 5000 };
+const FOLD = { instagram: 125 };
+
+/* ────────────────────────────────────────────────────────────────────────────
+   DATA — the only thing that changes between republishes.
    ──────────────────────────────────────────────────────────────────────────── */
 const DATA = {
-  updated: null,                 // ISO string, or null while never loaded
+  updated: null,
   connectors: [
     { name: "Composio", does: "Posts, comments, DMs, insights — the platform APIs.", connected: false },
     { name: "Zernio",   does: "Scheduling, queue slots, comment-to-DM, cross-post, measured analytics.", connected: false },
@@ -174,83 +206,24 @@ const DATA = {
     { id: "x",         label: "X",         handle: null, connected: false },
     { id: "youtube",   label: "YouTube",   handle: null, connected: false },
   ],
-  // Studio-wide warnings — e.g. reads and writes on different accounts.
   alerts: [],
-  // Per platform. Omit a key entirely when that data was not fetched.
-  data: {
-    instagram: {},
-    x: {},
-    youtube: {},
-  },
+  data: { instagram: {}, x: {}, youtube: {} },
 };
 
-/* Which sections exist per platform, and their limits. */
-const SECTIONS = {
-  instagram: ["Overview", "Queue", "Compose", "Insights", "Engage", "Automations"],
-  x:         ["Overview", "Compose", "Engage", "Monitor"],
-  youtube:   ["Overview", "Queue", "Compose", "Insights", "Engage"],
-};
-const LIMITS = { instagram: 2200, x: 280, youtube: 5000 };
-const FOLD = { instagram: 125 };
-
+/* ── helpers ─────────────────────────────────────────────────────────────── */
 const el = (t, c, txt) => { const n = document.createElement(t); if (c) n.className = c; if (txt != null) n.textContent = txt; return n; };
-const esc = (s) => String(s == null ? "" : s);
+const tz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return "your timezone"; } };
+let platform = null, section = null;
 
-let platform = null;
-let section = null;
-
-/* ── Connectors ──────────────────────────────────────────────────────────── */
-function renderConnectors() {
-  const host = document.getElementById("connectors");
-  host.replaceChildren();
-  for (const c of DATA.connectors || []) {
-    const box = el("div", "conn");
-    box.append(el("span", "led " + (c.connected ? "on" : "off")));
-    const t = el("div");
-    t.append(el("b", null, c.name), el("div", "does", c.does || ""));
-    t.append(el("div", "st " + (c.connected ? "on" : "off"),
-      c.connected ? "● Connected" : "○ Not connected — its features are unavailable"));
-    box.append(t);
-    host.append(box);
-  }
+function card(title, sub) {
+  const c = el("div", "card");
+  if (title) c.append(el("h3", null, title));
+  if (sub) c.append(el("p", "sub", sub));
+  return c;
 }
-
-/* ── Switchers ───────────────────────────────────────────────────────────── */
-function renderPlatforms() {
-  const host = document.getElementById("platforms");
-  host.replaceChildren();
-  const usable = (DATA.platforms || []).filter((p) => p.connected);
-  const list = usable.length ? usable : DATA.platforms || [];
-  if (!platform && list.length) platform = list[0].id;
-  for (const p of list) {
-    const b = el("button", "sw", p.handle ? `${p.label} · ${p.handle}` : p.label);
-    b.setAttribute("role", "tab");
-    b.setAttribute("aria-selected", String(p.id === platform));
-    b.disabled = !p.connected;
-    if (!p.connected) b.title = `${p.label} is not connected`;
-    b.addEventListener("click", () => { platform = p.id; section = null; render(); });
-    host.append(b);
-  }
-}
-
-function renderSections() {
-  const host = document.getElementById("sections");
-  host.replaceChildren();
-  const names = SECTIONS[platform] || [];
-  if (!section) section = names[0];
-  for (const s of names) {
-    const b = el("button", "sec", s);
-    b.setAttribute("role", "tab");
-    b.setAttribute("aria-selected", String(s === section));
-    b.addEventListener("click", () => { section = s; render(); });
-    host.append(b);
-  }
-}
-
-/* ── Shared blocks ───────────────────────────────────────────────────────── */
 function notLoaded(what) {
   const c = el("div", "empty");
-  c.append(el("b", null, `${what} not loaded`));
+  c.append(el("b", null, what + " not loaded"));
   c.append(el("p", null, `Ask Claude for it and this page is rebuilt with it. This is not the same as "${what.toLowerCase()} is empty".`));
   return c;
 }
@@ -260,88 +233,184 @@ function nothing(title, hint) {
   if (hint) c.append(el("p", null, hint));
   return c;
 }
-function card(title, sub) {
-  const c = el("div", "card");
-  if (title) c.append(el("h3", null, title));
-  if (sub) c.append(el("p", "sub", sub));
-  return c;
+/* A section is either absent (not fetched), unavailable (provider failed), or
+   a real value. All three must look different. */
+function gate(v, label) {
+  if (v === undefined || v === null) return notLoaded(label);
+  if (v && v.available === false) {
+    const c = card(label + " unavailable");
+    c.append(el("p", "note", v.detail || "The provider could not be reached, so this is unknown — not empty."));
+    return c;
+  }
+  return null;
 }
 
-/* ── Sections ────────────────────────────────────────────────────────────── */
-function overview(d) {
-  const out = [];
-  if (!d.stats) return [notLoaded("Overview")];
-  const c = card("At a glance", d.window || null);
+/* ── renderers ───────────────────────────────────────────────────────────── */
+function rStats(v, label) {
+  const c = card(label, v.window || null);
   const g = el("div", "stats");
-  for (const s of d.stats) {
+  for (const s of v.stats || []) {
     const b = el("div", "stat");
-    b.append(el("div", "n", s.value == null ? "—" : String(s.value)));
-    b.append(el("div", "l", s.label));
+    b.append(el("div", "n", s.value == null ? "—" : String(s.value)), el("div", "l", s.label));
     g.append(b);
   }
   c.append(g);
-  if (d.statsNote) c.append(Object.assign(el("p", "note", d.statsNote), { style: "margin-top:12px" }));
-  out.push(c);
-  return out;
+  if (v.note) { const n = el("p", "note", v.note); n.style.marginTop = "12px"; c.append(n); }
+  return c;
 }
 
-function queue(d) {
-  if (!d.queue) return [notLoaded("Queue")];
-  if (d.queue.available === false) {
-    const c = card("Queue unavailable");
-    c.append(el("p", "note", d.queue.detail || "The queue could not be read, so what is scheduled is unknown. This is not an empty queue."));
-    return [c];
+function rMedia(v, label) {
+  const items = Array.isArray(v) ? v : v.items || [];
+  if (!items.length) return nothing("No " + label.toLowerCase(), "Nothing published in this format yet.");
+  const c = card(label, items.length + " item" + (items.length === 1 ? "" : "s"));
+  const grid = el("div", "media");
+  for (const m of items) {
+    const t = el("div", "tile");
+    const th = el("div", "thumb");
+    if (m.thumbnail) th.style.backgroundImage = `url("${String(m.thumbnail).replace(/"/g, "%22")}")`;
+    const meta = el("div", "meta");
+    meta.append(el("div", "t", m.caption || m.title || "Untitled"));
+    if (m.stats) meta.append(el("div", "s", m.stats));
+    if (m.when) meta.append(el("div", "s", m.when));
+    t.append(th, meta);
+    grid.append(t);
   }
-  const posts = d.queue.posts || [];
-  if (!posts.length) return [nothing("Nothing scheduled", "Draft something in Compose and give it a time.")];
+  c.append(grid);
+  return c;
+}
 
+function rFeed(v, label) {
+  const items = Array.isArray(v) ? v : v.items || [];
+  if (!items.length) return nothing("Nothing in " + label.toLowerCase(), v.hint || "No results in this window.");
+  const c = card(label, v.hint || null);
+  for (const it of items) {
+    const r = el("div", "row"), left = el("div");
+    if (it.author) left.append(el("div", "who", it.author));
+    left.append(el("p", "cap", it.text || ""));
+    if (it.when || it.stats) left.append(el("span", "when", [it.when, it.stats].filter(Boolean).join(" · ")));
+    r.append(left);
+    if (it.tag) r.append(el("span", "pill " + (it.tone || "mute"), it.tag));
+    c.append(r);
+  }
+  return c;
+}
+
+function rThreads(v, label) {
+  const items = Array.isArray(v) ? v : v.items || [];
+  if (!items.length) return nothing("No messages", "Nothing waiting in the inbox.");
+  const c = card(label, "Replies are drafted in your brand voice. Edit here, then paste back to Claude to send.");
+  for (const t of items) {
+    const r = el("div", "row"), left = el("div");
+    left.style.flex = "1";
+    left.append(el("div", "who", t.from || "Unknown"));
+    left.append(el("p", "cap", t.text || ""));
+    if (t.when) left.append(el("span", "when", t.when));
+    if (t.reply != null) {
+      const ta = el("textarea"); ta.value = t.reply; ta.rows = 2; ta.style.marginTop = "7px";
+      ta.setAttribute("aria-label", "Draft reply to " + (t.from || "message"));
+      left.append(ta);
+    }
+    r.append(left);
+    if (t.tag) r.append(el("span", "pill " + (t.tone || "mute"), t.tag));
+    c.append(r);
+  }
+  return c;
+}
+
+function rTriage(v, label) {
+  const items = Array.isArray(v) ? v : v.items || [];
+  if (!items.length) return nothing("Nothing needs a reply", "No comments flagged as a question, complaint or escalation.");
+  const c = card(label, "Flagged by the rules in your settings — questions, complaints, escalation keywords.");
+  for (const it of items) {
+    const r = el("div", "row"), left = el("div");
+    left.style.flex = "1";
+    if (it.author) left.append(el("div", "who", it.author));
+    left.append(el("p", "cap", it.text || ""));
+    if (it.on) left.append(el("span", "when", "on: " + it.on));
+    if (it.reply != null) {
+      const ta = el("textarea"); ta.value = it.reply; ta.rows = 2; ta.style.marginTop = "7px";
+      ta.setAttribute("aria-label", "Draft reply"); left.append(ta);
+    }
+    r.append(left);
+    if (it.tag) r.append(el("span", "pill " + (it.tone || "warn"), it.tag));
+    c.append(r);
+  }
+  return c;
+}
+
+function rColl(v, label) {
+  const items = Array.isArray(v) ? v : v.items || [];
+  if (!items.length) return nothing("No " + label.toLowerCase(), "Nothing here yet.");
+  const c = card(label);
+  for (const it of items) {
+    const r = el("div", "row"), left = el("div");
+    left.append(el("div", "who", it.name || "Untitled"));
+    if (it.description) left.append(el("p", "cap", it.description));
+    if (it.count != null) left.append(el("span", "when", it.count + " item" + (it.count === 1 ? "" : "s")));
+    r.append(left);
+    if (it.tag) r.append(el("span", "pill mute", it.tag));
+    c.append(r);
+  }
+  return c;
+}
+
+function rPeople(v, label) {
+  const items = Array.isArray(v) ? v : v.items || [];
+  if (!items.length) return nothing("No suggestions", "Ask Claude to find accounts in a topic.");
+  const c = card(label, "Discovery only — following is not automated here.");
+  for (const p of items) {
+    const r = el("div", "row"), left = el("div");
+    left.append(el("div", "who", p.handle || p.name || "—"));
+    if (p.why) left.append(el("p", "cap", p.why));
+    if (p.followers != null) left.append(el("span", "when", Number(p.followers).toLocaleString() + " followers"));
+    r.append(left);
+    if (p.verified === false) r.append(el("span", "pill warn", "unverified"));
+    c.append(r);
+  }
+  return c;
+}
+
+function rQueue(v) {
+  const posts = Array.isArray(v) ? v : v.posts || [];
+  if (!posts.length) return nothing("Nothing scheduled", "Draft something in Compose and give it a time.");
   const c = card("Publishing queue", "Times in " + tz());
   const groups = [
     ["Scheduled", "These publish on their own at the time shown.", (p) => p.status === "scheduled"],
     ["Drafts", "No date set — these will never publish until one is.", (p) => p.status === "draft"],
     ["Done", "Published, or failed after the provider's retries.", (p) => p.status === "published" || p.status === "failed"],
   ];
-  for (const [label, hint, test] of groups) {
+  for (const [lab, hint, test] of groups) {
     const rows = posts.filter(test);
     if (!rows.length) continue;
-    c.append(el("p", "grouplabel", label), el("p", "grouphint", hint));
+    c.append(el("p", "grouplabel", lab), el("p", "grouphint", hint));
     for (const p of rows) {
-      const r = el("div", "row");
-      const left = el("div");
-      left.append(el("p", "cap", p.caption || "No caption"));
-      left.append(el("span", "when", whenLabel(p)));
-      r.append(left, el("span", "pill " + pillTone(p.status), pillText(p)));
+      const r = el("div", "row"), left = el("div");
+      left.append(el("p", "cap", p.caption || "No caption"), el("span", "when", whenLabel(p)));
+      const tone = p.status === "published" ? "ok" : p.status === "failed" ? "bad" : p.status === "draft" ? "mute" : "ok";
+      const text = p.status === "published" ? "Published" : p.status === "failed" ? "Failed"
+        : p.status === "draft" ? "Draft · will not publish" : "Scheduled · publishes automatically";
+      r.append(left, el("span", "pill " + tone, text));
       c.append(r);
     }
   }
-  return [c];
-}
-
-function pillTone(s) { return s === "published" ? "ok" : s === "failed" ? "bad" : s === "draft" ? "mute" : "ok"; }
-function pillText(p) {
-  if (p.status === "published") return "Published";
-  if (p.status === "failed") return "Failed";
-  if (p.status === "draft") return "Draft · will not publish";
-  return "Scheduled · publishes automatically";
+  return c;
 }
 function whenLabel(p) {
   if (!p.publishAt) return "No date";
   const d = new Date(p.publishAt);
-  if (isNaN(d)) return esc(p.publishAt);
-  const mins = Math.round((d.getTime() - Date.now()) / 60000);
-  const rel = mins < 0 ? "overdue" : mins < 60 ? `in ${mins} min` : mins < 1440 ? `in ${Math.round(mins / 60)} h` : `in ${Math.round(mins / 1440)} d`;
+  if (isNaN(d)) return String(p.publishAt);
+  const m = Math.round((d.getTime() - Date.now()) / 60000);
+  const rel = m < 0 ? "overdue" : m < 60 ? `in ${m} min` : m < 1440 ? `in ${Math.round(m / 60)} h` : `in ${Math.round(m / 1440)} d`;
   return d.toLocaleString() + " · " + rel;
 }
-function tz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return "your timezone"; } }
 
-function compose(d) {
+function rCompose(v) {
   const limit = LIMITS[platform] || 2200;
   const c = card("Draft", `Counted against ${platform}'s real limit of ${limit.toLocaleString()} characters.`);
   const ta = el("textarea");
-  ta.value = (d.draft && d.draft.text) || "";
+  ta.value = (v && v.text) || "";
   ta.setAttribute("aria-label", "Draft text");
-  const counts = el("div", "counts");
-  const n = el("span"), fold = el("span");
+  const counts = el("div", "counts"), n = el("span"), fold = el("span");
   counts.append(n, fold);
   const tick = () => {
     const len = ta.value.length;
@@ -352,74 +421,46 @@ function compose(d) {
   };
   ta.addEventListener("input", tick);
   c.append(ta, counts);
-
-  const acts = el("div", "acts");
-  const copy = el("button", "btn primary", "Copy for Claude");
+  const acts = el("div", "acts"), copy = el("button", "btn primary", "Copy for Claude");
   copy.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(ta.value); copy.textContent = "Copied"; setTimeout(() => (copy.textContent = "Copy for Claude"), 1600); }
     catch (e) { copy.textContent = "Select and copy manually"; }
   });
-  acts.append(copy);
-  c.append(acts);
-  c.append(el("p", "hint", "Nothing here reaches " + platform + ". This page never publishes — paste the text back to Claude and ask it to schedule or post."));
+  acts.append(copy); c.append(acts);
+  c.append(el("p", "hint", "Nothing here reaches " + platform + ". Paste it back to Claude and ask it to post or schedule."));
   setTimeout(tick, 0);
-  return [c];
+  return c;
 }
 
-function insights(d) {
+function rInsights(v) {
   const out = [];
-  if (d.stats) out.push(...overview(d));
-  if (!d.bestTime) { out.push(notLoaded("Best times")); return out; }
+  if (v.stats) out.push(rStats(v, "Performance"));
   const c = card("Best times to post", "Measured from your own engagement, converted to " + tz() + ".");
-  if (!d.bestTime.length) {
-    c.append(el("p", "sub", "No published posts with engagement yet, so there is nothing to measure."));
-    return [...out, c];
+  if (!v.bestTime) { out.push(c.append(el("p", "sub", "Not loaded.")) || c); return out; }
+  if (!v.bestTime.length) { c.append(el("p", "sub", "No published posts with engagement yet, so there is nothing to measure.")); out.push(c); return out; }
+  if (v.bestTime.every((s) => (s.post_count || 0) < 3)) {
+    const w = el("p", "note", "Every slot rests on fewer than 3 posts. That is raw data, not a recommendation.");
+    w.style.marginBottom = "10px"; c.append(w);
   }
-  const thin = d.bestTime.every((s) => (s.post_count || 0) < 3);
-  if (thin) c.append(Object.assign(el("p", "note", "Every slot rests on fewer than 3 posts. That is raw data, not a recommendation."), { style: "margin-bottom:10px" }));
   const list = el("div"); list.style.cssText = "display:flex;flex-direction:column;gap:6px";
-  for (const s of d.bestTime.slice(0, 6)) {
-    const row = el("div", "slot");
-    row.append(el("span", "t", s.label));
-    const v = el("span");
-    v.append(document.createTextNode((s.value != null ? s.value : "—") + " avg engagement"));
-    v.append(el("span", "c", (s.post_count || 0) + " post" + ((s.post_count === 1) ? "" : "s")));
-    row.append(v);
-    list.append(row);
+  for (const s of v.bestTime.slice(0, 6)) {
+    const row = el("div", "slot"); row.append(el("span", "t", s.label));
+    const val = el("span");
+    val.append(document.createTextNode((s.value != null ? s.value : "—") + " avg engagement"));
+    val.append(el("span", "c", (s.post_count || 0) + " post" + (s.post_count === 1 ? "" : "s")));
+    row.append(val); list.append(row);
   }
-  c.append(list);
-  return [...out, c];
+  c.append(list); out.push(c);
+  return out;
 }
 
-function engage(d) {
-  if (!d.engage) return [notLoaded("Comments and messages")];
-  if (!d.engage.length) return [nothing("Nothing waiting", "No comments or messages need a reply right now.")];
-  const c = card("Needs a reply", "Drafted in your brand voice. Edit here, then paste back to Claude to send.");
-  for (const item of d.engage) {
-    const r = el("div", "row");
-    const left = el("div");
-    left.append(el("p", "cap", item.from ? `${item.from}: ${item.text}` : item.text));
-    if (item.reply) {
-      const ta = el("textarea"); ta.value = item.reply; ta.rows = 2;
-      ta.style.marginTop = "7px";
-      ta.setAttribute("aria-label", "Draft reply");
-      left.append(ta);
-    }
-    r.append(left);
-    if (item.tag) r.append(el("span", "pill " + (item.tone || "mute"), item.tag));
-    c.append(r);
-  }
-  return [c];
-}
-
-function automations(d) {
-  if (!d.automations) return [notLoaded("Automations")];
-  if (!d.automations.length) return [nothing("No automations", "Ask Claude to set one up — a keyword in comments triggers a DM.")];
+function rAutos(v) {
+  const items = Array.isArray(v) ? v : v.items || [];
+  if (!items.length) return nothing("No automations", "Ask Claude to set one up — a keyword in comments triggers a DM.");
   const c = card("Comment-to-DM", "An armed rule messages real people, unattended, until it is switched off.");
-  for (const a of d.automations) {
-    const r = el("div", "row");
-    const left = el("div");
-    left.append(el("p", "cap", a.name || "Untitled"));
+  for (const a of items) {
+    const r = el("div", "row"), left = el("div");
+    left.append(el("div", "who", a.name || "Untitled"));
     left.append(el("span", "when", `Keywords: ${(a.keywords || []).join(", ") || "—"} · ${a.scope || "account-wide"}`));
     if (a.stats) {
       const s = el("p", "when", `${a.stats.delivered || 0} delivered · ${a.stats.read || 0} read · ${a.stats.clicks || 0} clicks`);
@@ -428,54 +469,125 @@ function automations(d) {
     r.append(left, el("span", "pill " + (a.active ? "ok" : "mute"), a.active ? "Live · sending DMs" : "Off"));
     c.append(r);
   }
-  return [c];
+  return c;
 }
 
-function monitor(d) {
-  if (!d.monitor) return [notLoaded("Monitoring")];
-  const c = card("Mentions and keywords", "X has no mentions endpoint and recent search reaches about 7 days — \"no results\" means none in that window.");
-  if (!d.monitor.length) { c.append(el("p", "sub", "Nothing in the search window.")); return [c]; }
-  for (const m of d.monitor) {
-    const r = el("div", "row");
-    const left = el("div");
-    left.append(el("p", "cap", m.text));
-    left.append(el("span", "when", m.when || ""));
-    r.append(left);
-    c.append(r);
+function rCross(v) {
+  const targets = (v && v.targets) || [];
+  if (!targets.length) return nothing("No cross-post drafted", "Ask Claude to adapt a post for several platforms at once.");
+  const c = card("Cross-post", "One payload, several platforms. Each gets its own wording where the limits differ.");
+  for (const t of targets) {
+    const lim = LIMITS[t.platform] || 2200;
+    const wrap = el("div"); wrap.style.marginBottom = "12px";
+    wrap.append(Object.assign(el("label", "fl", t.label || t.platform), { style: "margin-top:0" }));
+    const ta = el("textarea"); ta.rows = 2; ta.value = t.text || "";
+    ta.setAttribute("aria-label", (t.label || t.platform) + " text");
+    const cnt = el("div", "counts"), n = el("span"); cnt.append(n, el("span", null, t.note || ""));
+    const tick = () => { n.textContent = ta.value.length + " / " + lim; n.className = ta.value.length > lim ? "over" : ""; };
+    ta.addEventListener("input", tick); setTimeout(tick, 0);
+    wrap.append(ta, cnt);
+    if (t.blocked) wrap.append(Object.assign(el("p", "hint", t.blocked), { style: "color:var(--bad-ink)" }));
+    c.append(wrap);
   }
-  return [c];
+  c.append(el("p", "hint", "Results are reported per platform — one can succeed while another fails. Retry only the failed one."));
+  return c;
 }
 
-/* ── Render ──────────────────────────────────────────────────────────────── */
-function render() {
-  renderConnectors();
-  renderPlatforms();
-  renderSections();
+function rStudio(v) {
+  if (!v.video) return notLoaded("AI Studio");
+  const c = card("AI Studio", "Everything below is derived from the video's transcript, never its title.");
+  c.append(el("div", "who", v.video));
+  if (v.noTranscript) c.append(Object.assign(el("p", "note", "No caption track on this video, so this is from metadata only — labelled as such rather than guessed."), { style: "margin-top:10px" }));
+  for (const [label, text] of Object.entries(v.outputs || {})) {
+    c.append(el("label", "fl", label));
+    const ta = el("textarea"); ta.rows = 3; ta.value = text; ta.setAttribute("aria-label", label);
+    c.append(ta);
+  }
+  return c;
+}
 
-  const stamp = document.getElementById("stamp");
-  stamp.textContent = DATA.updated
+function rUpload(v) {
+  const c = card("Upload", "Drafted metadata. Nothing is uploaded from this page — paste back to Claude to publish.");
+  const f = (label, val, rows) => {
+    c.append(el("label", "fl", label));
+    const ta = el("textarea"); ta.rows = rows || 2; ta.value = val || ""; ta.setAttribute("aria-label", label);
+    c.append(ta);
+  };
+  f("Title (max 100)", v.title, 1);
+  f("Description (max 5,000)", v.description, 4);
+  f("Tags (500 characters combined)", (v.tags || []).join(", "), 1);
+  c.append(el("p", "hint", "Visibility: " + (v.visibility || "private") + ". Uploads cost about 1,600 quota units of a default 10,000 per day."));
+  return c;
+}
+
+const RENDER = { stats: rStats, media: rMedia, feed: rFeed, threads: rThreads, triage: rTriage, coll: rColl, people: rPeople, queue: rQueue, compose: rCompose, insights: rInsights, autos: rAutos, cross: rCross, studio: rStudio, upload: rUpload };
+
+/* ── chrome ──────────────────────────────────────────────────────────────── */
+function renderConnectors() {
+  const host = document.getElementById("connectors"); host.replaceChildren();
+  for (const c of DATA.connectors || []) {
+    const box = el("div", "conn");
+    box.append(el("span", "led " + (c.connected ? "on" : "off")));
+    const t = el("div");
+    t.append(el("b", null, c.name), el("div", "does", c.does || ""));
+    t.append(el("div", "st " + (c.connected ? "on" : "off"), c.connected ? "● Connected" : "○ Not connected — its features are unavailable"));
+    box.append(t); host.append(box);
+  }
+}
+function renderPlatforms() {
+  const host = document.getElementById("platforms"); host.replaceChildren();
+  const list = DATA.platforms || [];
+  if (!platform) platform = (list.find((p) => p.connected) || list[0] || {}).id;
+  for (const p of list) {
+    const b = el("button", "sw", p.handle ? `${p.label} · ${p.handle}` : p.label);
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(p.id === platform));
+    b.disabled = !p.connected;
+    if (!p.connected) b.title = p.label + " is not connected";
+    b.addEventListener("click", () => { platform = p.id; section = null; render(); });
+    host.append(b);
+  }
+}
+function renderSections() {
+  const host = document.getElementById("sections"); host.replaceChildren();
+  const specs = SECTIONS[platform] || [];
+  if (!section || !specs.some((s) => s.name === section)) section = (specs[0] || {}).name;
+  for (const s of specs) {
+    const b = el("button", "sec", s.name);
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(s.name === section));
+    b.addEventListener("click", () => { section = s.name; render(); });
+    host.append(b);
+  }
+}
+
+function render() {
+  renderConnectors(); renderPlatforms(); renderSections();
+  document.getElementById("stamp").textContent = DATA.updated
     ? "Updated " + new Date(DATA.updated).toLocaleString()
     : "Never loaded — ask Claude to fill it";
 
-  const body = document.getElementById("body");
-  body.replaceChildren();
-
-  for (const a of DATA.alerts || []) {
-    body.append(el("p", a.level === "error" ? "err" : "note", a.text));
-  }
+  const body = document.getElementById("body"); body.replaceChildren();
+  for (const a of DATA.alerts || []) body.append(el("p", a.level === "error" ? "err" : "note", a.text));
 
   const p = (DATA.platforms || []).find((x) => x.id === platform);
   if (p && !p.connected) {
     const c = card(p.label + " is not connected");
     c.append(el("p", "sub", "Connect it and ask Claude to refresh this studio."));
-    body.append(c);
-    return;
+    body.append(c); return;
   }
 
-  const d = (DATA.data && DATA.data[platform]) || {};
-  const fn = { Overview: overview, Queue: queue, Compose: compose, Insights: insights, Engage: engage, Automations: automations, Monitor: monitor }[section];
-  const blocks = fn ? fn(d) : [notLoaded(section || "Section")];
-  for (const b of blocks) body.append(b);
+  const spec = (SECTIONS[platform] || []).find((s) => s.name === section);
+  if (!spec) { body.append(notLoaded(section || "Section")); return; }
+
+  const v = ((DATA.data || {})[platform] || {})[spec.key];
+  // Compose always renders — it is an input, not a fetch.
+  if (spec.as !== "compose") {
+    const g = gate(v, spec.name);
+    if (g) { body.append(g); return; }
+  }
+  const out = RENDER[spec.as](v || {}, spec.name);
+  for (const b of [].concat(out)) body.append(b);
 }
 
 render();
