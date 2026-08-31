@@ -5,7 +5,10 @@ description: Router for YouTube channel management through Composio. Use wheneve
 
 # YouTube
 
-Manage a YouTube channel through the Composio `YOUTUBE` toolkit (51 tools).
+Manage a YouTube channel through two providers: the Composio `YOUTUBE` toolkit
+(51 tools) for Data API calls, and **Zernio** for scheduled uploads and the deep
+analytics the Data API does not expose — retention, demographics, daily views.
+See [references/zernio.md](references/zernio.md) for which provider owns what.
 
 ## 1. Read the operating rules
 
@@ -19,6 +22,12 @@ into its agent prompt, so both surfaces behave identically.
 A skill carries no tool access. Confirm Composio tools are visible; if not,
 this plugin ships `.mcp.json` for `https://connect.composio.dev/mcp` (`/mcp`
 shows status), or use the Composio CLI (`composio login`).
+
+For scheduling and deep analytics, also confirm a `zernio` MCP server is
+present. The plugin ships it in the same `.mcp.json`, pointing at
+`https://mcp.zernio.com/mcp`; `/mcp` authorizes it by browser sign-in. **Zernio
+being absent or unreachable is a normal state, not an error to work around** —
+each skill says what degrades to what.
 
 YouTube **has a managed app**, so connecting is one step — no developer
 credentials needed, unlike X. See [youtube-setup](../youtube-setup/SKILL.md).
@@ -40,6 +49,8 @@ title alone produces confident fiction.
 | Turn a video into summaries, titles, tags or cross-platform posts | [youtube-studio](../youtube-studio/SKILL.md) |
 | Read, reply to or moderate comments | [youtube-comments](../youtube-comments/SKILL.md) |
 | Playlists, subscriptions, search, discovery | [youtube-growth](../youtube-growth/SKILL.md) |
+| Schedule an upload, manage the queue, drip-feed a batch | [youtube-scheduling](../youtube-scheduling/SKILL.md) |
+| Retention, demographics, daily views, best time to post | [youtube-analytics](../youtube-analytics/SKILL.md) |
 
 The full verified tool inventory is [references/tools.md](references/tools.md).
 

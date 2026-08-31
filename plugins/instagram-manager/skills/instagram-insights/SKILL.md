@@ -61,3 +61,27 @@ tell the user if you are sampling rather than covering everything.
 - Reach counts unique accounts; views counts impressions. Do not use them
   interchangeably.
 - "Best time to post" comes from `online_followers`, not from guesswork.
+
+## Measured timing and decay (Zernio)
+
+Composio answers "how did this post do". It cannot answer "when should I post"
+or "how fast does my reach fall off" — those need history across posts, and live
+on Zernio. See [references/zernio.md](../instagram/references/zernio.md).
+
+- **Best time to post** — engagement grouped by day of week and hour.
+  **Hours are UTC** and `day_of_week` is 0=Monday; convert before saying "post
+  at 7pm". Check `post_count` per slot first: a slot backed by two posts is
+  noise, not a recommendation.
+- **Content decay** — how a post's performance falls off after publishing.
+- **Posting frequency vs engagement** — whether posting more actually helps this
+  account, rather than assuming it does.
+- **Follower history and demographics** — the trend over time, not just today's
+  count.
+
+Analytics routes are rate limited per **second** (6/s on the free tier). Sequence
+the calls for a report rather than fanning out.
+
+**If Zernio is unavailable**, per-post and account insights still work through
+Composio — offer those. Best-time, decay and frequency have no Composio
+equivalent: report them unavailable. Never guess an optimal posting hour; a
+plausible-sounding time the user acts on is worse than saying you do not know.

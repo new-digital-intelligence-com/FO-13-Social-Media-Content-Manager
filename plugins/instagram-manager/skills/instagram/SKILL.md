@@ -5,8 +5,11 @@ description: Router for Instagram account management through Composio. Use whene
 
 # Instagram
 
-Manage an Instagram Business or Creator account through the Composio
-`INSTAGRAM` toolkit.
+Manage an Instagram Business or Creator account through two providers:
+the Composio `INSTAGRAM` toolkit for Instagram API calls, and **Zernio** for
+everything needing a server-side clock or engagement history — the publishing
+queue, comment-to-DM automations, cross-posting and measured analytics. See
+[references/zernio.md](references/zernio.md) for which provider owns what.
 
 ## 1. Read the operating rules
 
@@ -29,6 +32,12 @@ Confirm you can see Composio tools (`COMPOSIO_SEARCH_TOOLS` and friends, or a
   `curl -fsSL https://composio.dev/install | sh` then `composio login`, and
   operate with `composio search`, `composio link instagram`, `composio execute`.
 
+For the Zernio capabilities, also confirm a `zernio` MCP server is present. The
+plugin ships it in the same `.mcp.json`, pointing at
+`https://mcp.zernio.com/mcp`; `/mcp` authorizes it by browser sign-in. **Zernio
+being absent or unreachable is a normal state, not an error to work around** —
+each skill says what degrades to what.
+
 Then confirm the Instagram account itself is connected — see
 [instagram-setup](../instagram-setup/SKILL.md). Tool access and account
 authorization are separate steps; having one does not imply the other.
@@ -46,6 +55,8 @@ authorization are separate steps; having one does not imply the other.
 | Schedule a post, manage the queue, check posting cadence | [instagram-scheduling](../instagram-scheduling/SKILL.md) |
 | Triage comments, decide what needs a reply, get content ideas | [instagram-monitoring](../instagram-monitoring/SKILL.md) |
 | Find accounts to follow by topic | [instagram-growth](../instagram-growth/SKILL.md) |
+| Auto-DM on a comment keyword, story-reply automations, private replies | [instagram-automation](../instagram-automation/SKILL.md) |
+| Post the same thing to Instagram and other platforms at once | [instagram-crossposting](../instagram-crossposting/SKILL.md) |
 
 For a request spanning several (for example "review last month and draft next
 week's posts"), load them in sequence rather than guessing across all of them.

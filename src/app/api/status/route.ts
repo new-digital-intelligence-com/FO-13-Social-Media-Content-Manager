@@ -4,6 +4,7 @@ import { isConnected as igConnected, getSession as igSession } from "@/lib/compo
 import { SetupRequiredError, isXConnected, xExecute } from "@/lib/x";
 import { listPosts } from "@/lib/schedule";
 import { isYtConnected, ytExecute } from "@/lib/yt";
+import { zernioHealth } from "@/lib/zernio";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -102,11 +103,14 @@ async function youtube(): Promise<PlatformStatus> {
 }
 
 export async function GET() {
-  const [ig, tw, yt, queue] = await Promise.all([
+  const [ig, tw, yt, queue, zernio] = await Promise.all([
     instagram(),
     x(),
     youtube(),
     listPosts().catch(() => []),
+    // Never let the probe fail the whole status call: an unreachable Zernio is
+    // a state to report, not an error to propagate.
+    zernioHealth().catch(() => ({ state: "unavailable" as const, detail: "Probe failed." })),
   ]);
 
   const pending = queue.filter((p) => p.status === "scheduled");
@@ -117,5 +121,8 @@ export async function GET() {
       awaitingApproval: pending.filter((p) => !p.approved).length,
       drafts: queue.filter((p) => p.status === "draft").length,
     },
+    // Features backed by Zernio read this to disable themselves rather than
+    // failing mid-action. `ready` is the only state where they are usable.
+    zernio,
   });
 }

@@ -3,6 +3,10 @@
     "composio": {
       "type": "http",
       "url": "https://connect.composio.dev/mcp"
+    },
+    "zernio": {
+      "type": "http",
+      "url": "https://mcp.zernio.com/mcp"
     }
   }
 }

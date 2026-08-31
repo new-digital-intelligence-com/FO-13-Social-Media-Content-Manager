@@ -5,6 +5,12 @@ two forms: **Claude Code plugins** (skills you invoke with `/instagram`, `/x` or
 `/youtube`) and a **Next.js app** (a full UI plus its own agent). Each platform
 shares one behaviour contract across both surfaces.
 
+Two providers sit underneath: **Composio** executes platform API calls, and
+**Zernio** owns what needs a server-side clock or engagement history — the
+publishing queue, comment-to-DM automations, cross-posting, and measured
+analytics. Zernio is optional: when it is unreachable, the features it backs
+report themselves unavailable and the rest keeps working.
+
 ## Setup — pick your path
 
 The two surfaces use **different Composio products with different credentials**.
@@ -27,8 +33,13 @@ Then, once:
    `composio`, and complete the browser sign-in. (Alternative, and Composio's
    own recommendation for Claude Code: install the CLI with
    `curl -fsSL https://composio.dev/install | sh` then `composio login`.)
-2. **Connect Instagram.** Ask Claude to connect Instagram, or run `/instagram`.
-   It returns a Connect Link; authorize a **Business or Creator** account.
+2. **Authorize Zernio** (Instagram and YouTube plugins). They ship the same
+   `.mcp.json` with a second server, `https://mcp.zernio.com/mcp`. Run `/mcp`,
+   select `zernio`, sign in. Skip it and everything except scheduling,
+   automations, cross-posting and deep analytics still works.
+3. **Connect the accounts.** Ask Claude to connect Instagram, or run
+   `/instagram`. It returns a Connect Link; authorize a **Business or Creator**
+   account. Repeat per platform, per provider.
 
 All three plugins ship the **same** `.mcp.json`, so you authorize Composio once,
 not once per plugin. Authorizing Composio and connecting an account are separate
@@ -59,6 +70,8 @@ npm run dev                    # http://localhost:3000
 | `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) → API keys. Starts `sk-ant-`. | The app runs its own agent; the Claude Code session is not in the loop |
 | `ANTHROPIC_MODEL` | `claude-haiku-4-5` (default), or `claude-sonnet-5` for harder work | The model the app's agent uses |
 | `CLOUD_NAME`, `CLOUD_API_KEY`, `CLOUD_API_SECRET` | [cloudinary.com](https://cloudinary.com) → Dashboard | Media hosting. An Instagram Reel cover and a YouTube thumbnail accept a **public URL only**, with no file equivalent, so those two need it |
+| `ZERNIO_API_KEY` | [zernio.com](https://zernio.com) → Settings → API keys. `sk_` + 64 hex chars, shown once. | Scheduling, automations, cross-posting, measured analytics. **Optional** — omit it and those features report as unconfigured |
+| `ZERNIO_PROFILE_ID` | The `profileId` on any connected Zernio account | The profile that owns queue slots |
 
 Three more are optional and documented in `.env.example`: `IG_LOOKUP_*` for
 Instagram handle verification in the Grow tab (leave blank and suggestions stay
@@ -102,6 +115,7 @@ fixable in code.
 | | Path A (plugin) | Path B (app) |
 |---|---|---|
 | Composio product | For You | Platform |
+| Zernio credential | Browser OAuth via `/mcp` | `ZERNIO_API_KEY` in `.env.local` |
 | Credential | Browser OAuth (`ck_`) | Project key (`ak_`) |
 | Where connections live | Your personal Composio account | The project, scoped to `COMPOSIO_TEST_USER_ID` |
 | Model | Claude, no key needed | Claude, your `ANTHROPIC_API_KEY` |
@@ -138,6 +152,9 @@ plugins/instagram-manager/
     instagram-growth/       account discovery by topic, and why follows cannot
                             be automated on Instagram
     instagram-content/      browse and audit the library
+    instagram-automation/   comment-to-DM + story-reply automations, private
+                            replies                              [Zernio]
+    instagram-crossposting/ one payload to several platforms      [Zernio]
 ```
 
 The scheduling, monitoring and growth skills reach capabilities Instagram's API
@@ -198,6 +215,13 @@ The skills do not reimplement any of this. They drive the running app over HTTP
 is not running, those capabilities are unavailable in Claude Code**, and the
 skills are told to say so plainly rather than blame the platform's API.
 
+**Scheduling is the exception, and now prefers Zernio.** The local queue in
+`.data/` only fires while `npm run dev` is running and never retries; Zernio
+holds the post server-side, retries three times with exponential backoff, and
+supports recurring slots. The skills queue on Zernio first and drop to the app's
+queue only when Zernio is unreachable — saying which one they landed on. The
+app's Queue and Automation tabs are unchanged and still work.
+
 ## 2. Next.js app — direct UI + AI
 
 The landing page lists all three platforms; each opens its own panel with a
@@ -221,6 +245,7 @@ src/components/MediaInput.tsx   upload-or-URL media picker with preview
 src/lib/{ig,x,yt}.ts            typed tool execution + result unwrapping
 src/lib/store.ts                JSON store under .data/ (queue, settings, selection)
 src/lib/cloudinary.ts           public-URL hosting for Reel covers + YT thumbnails
+src/lib/zernio.ts               Zernio client; never throws, degrades instead
 src/app/api/{ig,x,yt}/*         manual actions (direct tool calls, no LLM)
 src/app/api/assist              AI writing help (tool-free, cheap)
 src/app/api/{chat,x/chat,yt/chat}  agent loop (tools, for each "Ask AI" tab)
@@ -330,6 +355,8 @@ plugins/youtube-manager/skills/
   youtube-studio/      the same workbench as the app's AI Studio tab
   youtube-comments/    read, reply, moderate
   youtube-growth/      playlists, subscriptions, search, trending
+  youtube-scheduling/  queued uploads, drip-feeding a batch       [Zernio]
+  youtube-analytics/   retention, demographics, daily views       [Zernio]
 ```
 
 App tabs: Overview, Videos, AI Studio, Upload, Comments, Playlists, Grow,
@@ -357,7 +384,56 @@ Three YouTube constraints the surfaces state rather than hide:
 A YouTube thumbnail is URL-only (`thumbnailUrl` has no file equivalent), which
 is one of the two reasons the app needs Cloudinary.
 
-## 5. `scripts/` — Python verification harness
+## 5. Zernio — the second provider
+
+Composio answers "do this on Instagram now". Zernio answers "do this later,
+repeatedly, and tell me whether it worked" — anything needing a server-side
+clock or history across posts.
+
+| Owned by Zernio | Why not Composio |
+|---|---|
+| Scheduled posts, queue slots, drip-feed | Instagram has no scheduling API; something must hold the post |
+| Retry on failure | 3 attempts, exponential backoff, then a webhook |
+| Comment-to-DM and story-reply automations | No Instagram tool does this at all |
+| Private reply to a commenter | Instagram supports it; the toolkit does not expose it |
+| Best time to post, content decay, frequency-vs-engagement | Needs history across posts |
+| YouTube retention, demographics, daily views | Not in the Data API; needs `yt-analytics` |
+| Cross-posting one payload to several platforms | Composio is one toolkit per call |
+
+Everything else stays on Composio. Contracts live in
+`plugins/{instagram,youtube}-manager/skills/{instagram,youtube}/references/zernio.md`.
+
+### Designed to be absent
+
+Zernio is a remote service that will sometimes be down, and the whole
+integration is built around that rather than assuming uptime.
+
+- **The app never breaks.** `src/lib/zernio.ts` throws nothing — not at import,
+  not on failure. Every call returns a discriminated result, and requests carry
+  a timeout so an unreachable Zernio cannot hang the page that called it.
+  `GET /api/status` reports `zernio.state` as `ready`, `unconfigured`,
+  `unavailable` or `error`; features read it and disable themselves rather than
+  failing mid-action.
+- **The skills state which rung they landed on.** Scheduling falls back to the
+  app's local queue (weaker: only fires while the app is up — the skills say
+  so). Analytics falls back to Composio's shallower numbers, explicitly
+  labelled. Automations, private replies and cross-posting have **no** fallback
+  and are reported unavailable rather than approximated.
+- **The failure is read, not retried blindly.** 401 is re-authorize, 403
+  `ACCOUNT_DISCONNECTED` is reconnect, 409 is a content-hash duplicate that
+  surfaces the original post, 429 backs off, 5xx and timeouts mean outage. A
+  failed publish is never retried blindly, since the first attempt may have
+  partly succeeded.
+- **Configured ≠ reachable ≠ usable.** A missing key is a setup task, not an
+  outage, and the two are reported differently. So is an empty queue: a profile
+  with no slots returns 404 on `/queue/slots`, which means "configure slots",
+  not "Zernio is down".
+
+Duplicate protection is worth knowing: a repeated `x-request-id` within ~5 min
+returns the original post (HTTP 200, a retry), and identical content to the same
+account within 24 h is rejected 409. The app sends a fresh UUID per call.
+
+## 6. `scripts/` — Python verification harness
 
 Proved the connection before any app code existed. Still the quickest way to
 test one tool call:
@@ -378,6 +454,12 @@ test one tool call:
   credentials in February 2026 — and gates endpoints by plan tier.
 - **YouTube is quota-limited, not rate-limited.** Budget in units per day, not
   requests per minute.
+- **Zernio can be unavailable, and that is a designed-for state**, not an error
+  path to patch. Anything time-based or history-based degrades; nothing else
+  should notice.
+- **Zernio does not buy YouTube quota.** It publishes through the same Data API,
+  so a scheduled upload spends its ~1600 units when it is created, not when it
+  goes live.
 - **The app is single-user by construction.** `COMPOSIO_TEST_USER_ID` is read
   from the environment, `.data/` is one global JSON store, and there is no auth
   layer — fine on localhost, not on a public URL. `getSession(user)`,
