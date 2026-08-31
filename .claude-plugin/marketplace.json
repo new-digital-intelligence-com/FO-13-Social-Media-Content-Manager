@@ -1,0 +1,23 @@
+{
+  "name": "socialmedia",
+  "owner": {
+    "name": "HelmiDev03"
+  },
+  "plugins": [
+    {
+      "source": "./plugins/instagram-manager",
+      "name": "instagram-manager",
+      "description": "Manage an Instagram Business or Creator account end to end through Composio: publishing, insights, comments, and direct messages."
+    },
+    {
+      "source": "./plugins/x-manager",
+      "name": "x-manager",
+      "description": "Manage an X (Twitter) account through Composio: posting and threads, engagement, search and monitoring, lists, DMs and analytics."
+    },
+    {
+      "source": "./plugins/youtube-manager",
+      "name": "youtube-manager",
+      "description": "Manage a YouTube channel through Composio: uploads, metadata, playlists, comments, transcripts and analytics, with transcript-driven AI workflows."
+    }
+  ]
+}

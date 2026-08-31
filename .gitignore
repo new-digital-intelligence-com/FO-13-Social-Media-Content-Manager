@@ -1,0 +1,24 @@
+
+
+# local app data (queue, settings, scheduler state, account labels)
+.data/
+
+# python (Composio verification scripts)
+.venv/
+__pycache__/
+*.pyc
+
+# node / next.js
+/node_modules
+/.next/
+/out/
+/build
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+/coverage
