@@ -167,6 +167,7 @@ const SECTIONS = {
     { name: "Grow",       key: "grow",        as: "people"   },
     { name: "Automation", key: "automations", as: "autos"    },
     { name: "Cross-post", key: "crosspost",   as: "cross"    },
+    { name: "Ask AI",     key: "ask",       as: "ask"      },
   ],
   x: [
     { name: "Overview", key: "overview", as: "stats"   },
@@ -176,6 +177,7 @@ const SECTIONS = {
     { name: "Lists",    key: "lists",    as: "coll"    },
     { name: "Grow",     key: "grow",     as: "people"  },
     { name: "Messages", key: "messages", as: "threads" },
+    { name: "Ask AI",     key: "ask",       as: "ask"      },
   ],
   youtube: [
     { name: "Overview",  key: "overview",  as: "stats"    },
@@ -188,6 +190,7 @@ const SECTIONS = {
     { name: "Grow",      key: "grow",      as: "people"   },
     { name: "Search",    key: "search",    as: "feed"     },
     { name: "Queue",     key: "queue",     as: "queue"    },
+    { name: "Ask AI",     key: "ask",       as: "ask"      },
   ],
 };
 
@@ -610,7 +613,106 @@ function rUpload(v) {
   return c;
 }
 
-const RENDER = { stats: rStats, media: rMedia, feed: rFeed, threads: rThreads, triage: rTriage, coll: rColl, people: rPeople, queue: rQueue, compose: rCompose, insights: rInsights, autos: rAutos, cross: rCross, studio: rStudio, upload: rUpload };
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ASSIST — the "Ask AI" tab. Nothing here invokes a Claude *skill*: no runtime
+   capability does that, because a skill loads into a chat turn and a page
+   cannot start one. What this does instead is run the skill's BEHAVIOUR in the
+   page — `sample` provides Claude, and the tools below are page functions that
+   reach the same connectors through `mcp`.
+
+   `rules` is where the platform's rules.md goes, inlined at publish time. Claude
+   in the page has no memory and no skill loaded, so whatever must govern it has
+   to be in this string.
+   ──────────────────────────────────────────────────────────────────────────── */
+const ASSIST = { enabled: false, rules: "" };
+
+let sample = null;
+(async () => {
+  if (!ASSIST.enabled) return;
+  try { sample = await window.claude?.use?.("sample"); } catch (e) { sample = null; }
+  if (sample) render();
+})();
+
+/** LIVE actions, re-exposed as tools Claude-in-the-page may call. */
+function assistTools() {
+  if (!mcp) return [];
+  return Object.entries(LIVE.actions).map(([name, spec]) => ({
+    name,
+    description: spec.description || `Call ${spec.tool} on ${spec.server}.`,
+    inputSchema: spec.inputSchema || { type: "object", properties: {} },
+    async execute(input) {
+      const r = await runLive(name, input, null);
+      if (!r.ok) throw new Error(r.message);
+      return r.payload;
+    },
+  }));
+}
+
+function rAsk() {
+  const c = card("Ask AI", "Runs here, in the page, against your connectors.");
+  if (!sample) {
+    c.append(el("p", "sub", "Not available in this view — ask in the chat beside this page instead."));
+    return c;
+  }
+  const ta = el("textarea");
+  ta.rows = 2;
+  ta.placeholder = "e.g. draft three caption options for the clock image";
+  ta.setAttribute("aria-label", "Ask about " + platform);
+  const out = el("p", "sub");
+  out.style.whiteSpace = "pre-wrap";
+  const acts = el("div", "acts");
+  const go = el("button", "btn primary", "Ask");
+  const stop = el("button", "btn ghost", "Stop");
+  stop.hidden = true;
+  let ctrl = null;
+
+  go.addEventListener("click", async () => {
+    const q = ta.value.trim();
+    if (!q) return;
+    go.disabled = true; stop.hidden = false;
+    out.textContent = "Thinking…";
+    ctrl = new AbortController();
+    try {
+      const tools = assistTools();
+      const res = await sample(
+        [{ role: "user", content:
+            ASSIST.rules +
+            "\n\nPlatform: " + platform + ".\n" +
+            (tools.length ? "" : "You have no connector tools here, so do not claim you performed an action.\n") +
+            "\nRequest: " + q }],
+        {
+          signal: ctrl.signal,
+          tools,
+          // `text` is the WHOLE answer so far — assign, never append.
+          onText: ({ text }) => { out.textContent = text; },
+        },
+      );
+      out.textContent = (res && res.text) || out.textContent;
+      if (res && res.truncated) out.textContent += "\n\n[cut off]";
+    } catch (e) {
+      const code = e && e.code;
+      out.textContent =
+        code === "cancelled" ? "Stopped."
+        : code === "not_granted" ? "Not permitted in this view."
+        : code === "rate_limited" ? "Rate limited — wait a moment before asking again."
+        : (e && e.text) ? e.text + "\n\n[incomplete]"
+        : (e && e.message) || "Failed.";
+    } finally {
+      go.disabled = false; stop.hidden = true; ctrl = null;
+    }
+  });
+  stop.addEventListener("click", () => ctrl && ctrl.abort());
+
+  acts.append(go, stop);
+  c.append(ta, acts, out);
+  c.append(el("p", "hint", mcp
+    ? "It can act through your connectors, so treat an instruction to post the way you would in chat."
+    : "No connector access here — it can draft and reason, but cannot publish or read live data."));
+  return c;
+}
+
+const RENDER = { stats: rStats, media: rMedia, feed: rFeed, threads: rThreads, triage: rTriage, coll: rColl, people: rPeople, queue: rQueue, compose: rCompose, insights: rInsights, autos: rAutos, cross: rCross, studio: rStudio, upload: rUpload, ask: rAsk };
 
 /* ── chrome ──────────────────────────────────────────────────────────────── */
 /**
@@ -685,7 +787,7 @@ function render() {
 
   const v = ((DATA.data || {})[platform] || {})[spec.key];
   // Compose always renders — it is an input, not a fetch.
-  if (spec.as !== "compose") {
+  if (spec.as !== "compose" && spec.as !== "ask") {
     const g = gate(v, spec.name);
     if (g) { body.append(g); return; }
   }

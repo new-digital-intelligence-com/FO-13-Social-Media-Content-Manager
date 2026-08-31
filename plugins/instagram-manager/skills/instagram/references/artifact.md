@@ -166,6 +166,34 @@ never silently retry a publish; re-read the state first.
 A live button publishes for real. Say so on the control, confirm before
 anything irreversible, and never label a snapshot control the same way.
 
+## The Ask AI tab — running the skill's behaviour in the page
+
+**No capability invokes a Claude skill.** A skill loads into a chat turn, and a
+page cannot start one. What the studio does instead is run the skill's
+*behaviour*: `sample` gives the page Claude, and `sample`'s `tools` are page
+functions that reach the same connectors through `mcp`.
+
+```js
+ASSIST = {
+  enabled: true,
+  rules: "<the platform's rules.md, inlined here>",
+}
+```
+
+```
+capabilities: { sample: {}, mcp: { servers: [...] } }
+```
+
+Claude-in-the-page has **no memory and no skill loaded**, so everything that must
+govern it goes in `rules` — the same contract the chat-side skill follows, so
+both surfaces behave identically. Without `mcp`, it can draft and reason but
+must not claim it performed anything; the page tells it so explicitly.
+
+The viewer pays for these calls and the first one asks consent, so it only fires
+on a click, never on load. Errors branch on code: hide on `not_granted`, back off
+on `rate_limited`, and never loop. `onText` delivers the whole answer so far —
+assign it, never append.
+
 ## Publishing
 
 Title stays **Content Studio**; keep the favicon it was created with. Pass a
