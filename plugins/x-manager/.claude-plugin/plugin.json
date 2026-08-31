@@ -1,9 +1,8 @@
 {
   "name": "x-manager",
+  "displayName": "NDI - X (Twitter) Manager",
   "description": "Manage an X (Twitter) account through Composio: posting and threads, engagement, search and monitoring, lists, DMs and analytics.",
-  "version": "0.1.0",
-  "author": {
-    "name": "New Digital Intelligence",
-    "url": "https://new-digital-intelligence.com"
-  }
+  "author": { "name": "New Digital Intelligence" },
+  "license": "UNLICENSED",
+  "keywords": ["x", "twitter", "social-media", "composio", "engagement", "ndi"]
 }

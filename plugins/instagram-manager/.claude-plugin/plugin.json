@@ -1,9 +1,8 @@
 {
   "name": "instagram-manager",
+  "displayName": "NDI - Instagram Manager",
   "description": "Manage an Instagram Business or Creator account end to end through Composio: publishing, insights, comments, and direct messages.",
-  "version": "0.1.0",
-  "author": {
-    "name": "New Digital Intelligence",
-    "url": "https://new-digital-intelligence.com"
-  }
+  "author": { "name": "New Digital Intelligence" },
+  "license": "UNLICENSED",
+  "keywords": ["instagram", "social-media", "composio", "publishing", "analytics", "ndi"]
 }

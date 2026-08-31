@@ -1,9 +1,8 @@
 {
   "name": "youtube-manager",
+  "displayName": "NDI - YouTube Manager",
   "description": "Manage a YouTube channel through Composio: uploads, metadata, playlists, comments, transcripts and analytics, with transcript-driven AI workflows.",
-  "version": "0.1.0",
-  "author": {
-    "name": "New Digital Intelligence",
-    "url": "https://new-digital-intelligence.com"
-  }
+  "author": { "name": "New Digital Intelligence" },
+  "license": "UNLICENSED",
+  "keywords": ["youtube", "video", "social-media", "composio", "analytics", "ndi"]
 }
