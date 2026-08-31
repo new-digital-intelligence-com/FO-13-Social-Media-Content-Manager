@@ -28,27 +28,13 @@
     --ok-bg: #ecfdf5;   --ok-ink: #047857;   --ok-ring: #a7f3d0;
     --warn-bg: #fffbeb; --warn-ink: #92400e; --warn-ring: #fde68a;
     --bad-bg: #fef2f2;  --bad-ink: #b91c1c;  --bad-ring: #fecaca;
+    /* Light-only, deliberately: the Content Studio web app pins
+       color-scheme: light, and this page must match it rather than follow
+       the viewer's theme. Every colour is painted explicitly so the page
+       holds on a dark host ground. */
+    color-scheme: light;
     --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  }
-  /* Only tokens change per theme — never a component rule. */
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --ground: #141416; --surface: #1c1c1f; --ink: #f2f2f4;
-      --muted: rgba(255,255,255,.60); --faint: rgba(255,255,255,.45);
-      --hairline: rgba(255,255,255,.12); --inset: rgba(255,255,255,.04);
-      --ok-bg:#052e23; --ok-ink:#6ee7b7; --ok-ring:#065f46;
-      --warn-bg:#2e2205; --warn-ink:#fcd34d; --warn-ring:#78500a;
-      --bad-bg:#2e0b0b; --bad-ink:#fca5a5; --bad-ring:#7f1d1d;
-    }
-  }
-  :root[data-theme="dark"] {
-    --ground: #141416; --surface: #1c1c1f; --ink: #f2f2f4;
-    --muted: rgba(255,255,255,.60); --faint: rgba(255,255,255,.45);
-    --hairline: rgba(255,255,255,.12); --inset: rgba(255,255,255,.04);
-    --ok-bg:#052e23; --ok-ink:#6ee7b7; --ok-ring:#065f46;
-    --warn-bg:#2e2205; --warn-ink:#fcd34d; --warn-ring:#78500a;
-    --bad-bg:#2e0b0b; --bad-ink:#fca5a5; --bad-ring:#7f1d1d;
   }
 
   * { box-sizing: border-box; }
