@@ -124,11 +124,47 @@ It does **not** call anything. Its action is "Copy for Claude" — text comes ba
 to you and you perform it. Never label a control "Publish", and never let the
 page imply something reached a platform.
 
-Giving it live connector access is possible via the `mcp` capability, but only
-for tools whose real request and response you have observed in this session. The
-runtime contract carries the call envelope, never a tool's argument names or
-result encoding — so without that observation, stay with the snapshot and say so
-in your reply rather than in the page.
+## Turning on live actions
+
+The page can call the viewer's connectors itself, so a button queues a post or
+sends a reply without another chat turn. Two things must both be true:
+
+1. **You have observed the tool's real request and response in this session.**
+   The runtime contract carries the call envelope, never a tool's argument names
+   or result encoding. A guessed shape fails at the user's click — the worst
+   place to discover it. If you have not made the call yourself, leave the page
+   in snapshot and say so in your reply, not in the page.
+2. **You fill `LIVE` and declare the matching capability at publish time:**
+
+```js
+LIVE = {
+  enabled: true,
+  actions: {
+    queue: {
+      server: "composio",              // the <server> in mcp__<server>__<tool>
+      tool:  "<observed tool name>",
+      args:  ({ platform, text }) => ({ /* the shape you observed */ }),
+    },
+  },
+}
+```
+
+```
+capabilities: { mcp: { servers: [{ server: "composio", tools: ["<tool>"] }] } }
+```
+
+Keep the manifest minimal — it is a viewer-consented grant, and declaring `mcp`
+bars public sharing of the page.
+
+The page still renders and stays useful when the capability resolves `null`;
+live controls simply do not appear. Errors branch on the error **code**, never
+the message: `needs_reauth` says reconnect, `server_not_connected` says add the
+connector, `rate_limited` says wait. `server_unavailable` and `upstream_error`
+are **ambiguous for writes** — a rejection is not proof the tool did not run, so
+never silently retry a publish; re-read the state first.
+
+A live button publishes for real. Say so on the control, confirm before
+anything irreversible, and never label a snapshot control the same way.
 
 ## Publishing
 

@@ -212,6 +212,89 @@ const DATA = {
   data: { instagram: {}, x: {}, youtube: {} },
 };
 
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LIVE — optional. Off unless Claude fills it in AND declares the matching
+   `capabilities: {mcp: {servers: [...]}}` at publish time.
+
+   Only fill this for tools whose REAL request and response you have observed in
+   this session. The runtime contract gives the call envelope, never a tool's
+   argument names or result encoding — a guessed shape here fails at the user's
+   click, which is the worst place to find out.
+
+   `server` is the connector segment from your tool names
+   (mcp__<server>__<tool>). `args` is a function of the page's own values.
+   ──────────────────────────────────────────────────────────────────────────── */
+const LIVE = {
+  enabled: false,
+  // e.g. { refresh: {server:"composio", tool:"...", args: () => ({...})} }
+  actions: {},
+};
+
+let mcp = null;
+
+/* Resolve the capability without blocking first paint. The page must work
+   before this settles, and forever if it resolves null. */
+(async () => {
+  if (!LIVE.enabled) return;
+  try {
+    mcp = await window.claude?.use?.("mcp");
+  } catch (e) {
+    mcp = null;
+  }
+  if (mcp) render(); // re-render so live controls appear
+})();
+
+/**
+ * Run one live action. Branches on the error CODE, never the message — each
+ * code has a different correct response, and one generic banner hides the
+ * single action that would fix the page.
+ */
+async function runLive(name, payload, statusEl) {
+  const spec = LIVE.actions[name];
+  if (!mcp || !spec) return { ok: false, message: "Not available." };
+  const say = (m) => { if (statusEl) statusEl.textContent = m; };
+  say("Working…");
+  try {
+    const res = await mcp.callTool(spec.server, spec.tool, spec.args(payload));
+    say("Done.");
+    return { ok: true, payload: res && res.payload };
+  } catch (e) {
+    const code = e && e.code;
+    const msg =
+      code === "needs_reauth"
+        ? `${spec.server} needs re-authorizing — reconnect it in Settings → Connectors, then try again.`
+      : code === "server_not_connected"
+        ? `${spec.server} is not connected for this viewer. Add the connector to use this.`
+      : code === "rate_limited"
+        ? "Rate limited. Wait a moment and try again."
+      : code === "server_unavailable" || code === "upstream_error"
+        // Ambiguous for writes: a rejection is NOT proof the tool did not run.
+        ? "The connector did not answer. Do not repeat this — re-read the state first to see whether it went through."
+      : code === "tool_error"
+        ? "The connector rejected it: " + (e.message || "no reason given")
+        : e.message || "Failed.";
+    say(msg);
+    return { ok: false, message: msg };
+  }
+}
+
+/** A button that only appears when the live layer is actually usable. */
+function liveButton(label, action, payloadFn) {
+  if (!mcp || !LIVE.actions[action]) return null;
+  const wrap = el("span");
+  const b = el("button", "btn ghost", label);
+  const status = el("span", "hint");
+  status.style.marginLeft = "8px";
+  b.addEventListener("click", async () => {
+    b.disabled = true;
+    await runLive(action, payloadFn ? payloadFn() : {}, status);
+    b.disabled = false;
+  });
+  wrap.append(b, status);
+  return wrap;
+}
+
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 const el = (t, c, txt) => { const n = document.createElement(t); if (c) n.className = c; if (txt != null) n.textContent = txt; return n; };
 const tz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return "your timezone"; } };
@@ -428,8 +511,13 @@ function rCompose(v) {
     try { await navigator.clipboard.writeText(ta.value); copy.textContent = "Copied"; setTimeout(() => (copy.textContent = "Copy for Claude"), 1600); }
     catch (e) { copy.textContent = "Select and copy manually"; }
   });
-  acts.append(copy); c.append(acts);
-  c.append(el("p", "hint", "Nothing here reaches " + platform + ". Paste it back to Claude and ask it to post or schedule."));
+  acts.append(copy);
+  const live = liveButton("Queue it", "queue", () => ({ platform, text: ta.value }));
+  if (live) acts.append(live);
+  c.append(acts);
+  c.append(el("p", "hint", mcp && LIVE.actions.queue
+    ? "\u201cQueue it\u201d schedules through your own connector — it publishes for real, so check the text first."
+    : "Nothing here reaches " + platform + ". Paste it back to Claude and ask it to post or schedule."));
   setTimeout(tick, 0);
   return c;
 }
