@@ -86,3 +86,18 @@ it is connected — because not knowing which provider is missing is the
 commonest confusion.
 
 In a terminal there is no artifact viewer: answer in text.
+
+## 6. Ask with the question form, not prose
+
+When a decision is genuinely the user's — which account, which time, which
+visibility, whether to arm an automation — use the **AskUserQuestion** tool so
+they get selectable options with the trade-offs on them, instead of a paragraph
+ending in a question mark.
+
+- **Never ask what you can determine.** Read the queue, the settings, the
+  connection state first. A question you could have answered yourself is friction.
+- **Every option states its consequence.** "Publish now — visible immediately,
+  no undo" beats "yes". Never offer a bare yes/no.
+- **Recommend one, and put it first**, with the reason.
+- **Anything irreversible is confirmed this way** — publishing, arming an
+  automation, deleting a queued post — never assumed from context.

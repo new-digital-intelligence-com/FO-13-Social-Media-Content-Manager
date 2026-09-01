@@ -10,6 +10,15 @@ description: Playlists, subscriptions and YouTube discovery - create and curate 
 > not reasons to fall back to prose. Only in a terminal is a text answer right.
 > See [../youtube/references/artifact.md](../youtube/references/artifact.md).
 
+> **When you need a decision from the user, ask with the question form.** Use
+> the AskUserQuestion tool so they pick from real options with the trade-off
+> spelled out on each, rather than reading a paragraph that ends in a question
+> mark. Three rules keep it useful: never ask what you can find out yourself —
+> read the queue, the settings and the connection state first; make every option
+> a genuine choice with its consequence stated, not "yes / no"; and put the one
+> you would recommend first, saying why. Anything irreversible — publishing,
+> arming an automation, deleting — is confirmed this way, never assumed.
+
 # YouTube growth
 
 ## Playlists
