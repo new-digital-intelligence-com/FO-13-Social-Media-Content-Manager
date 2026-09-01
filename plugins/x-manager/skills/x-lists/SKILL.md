@@ -10,14 +10,27 @@ description: Create and curate X lists - create, update, delete, add or remove m
 > not reasons to fall back to prose. Only in a terminal is a text answer right.
 > See [../x/references/artifact.md](../x/references/artifact.md).
 
-> **When you need a decision from the user, ask with the question form.** Use
-> the AskUserQuestion tool so they pick from real options with the trade-off
-> spelled out on each, rather than reading a paragraph that ends in a question
-> mark. Three rules keep it useful: never ask what you can find out yourself —
-> read the queue, the settings and the connection state first; make every option
-> a genuine choice with its consequence stated, not "yes / no"; and put the one
-> you would recommend first, saying why. Anything irreversible — publishing,
-> arming an automation, deleting — is confirmed this way, never assumed.
+> **Never ask an open question in prose.** The moment you would write a
+> sentence ending in "?" with options inside it, stop and ask with the
+> **tappable question tool** instead, so the user clicks rather than reads and
+> retypes. Its name differs by surface — **`ask_user_input_v0`** in the Claude
+> app, **`AskUserQuestion`** in Claude Code — so use whichever one is in your
+> toolset.
+>
+> This binds on the very first turn: invoked bare with no request, do **not**
+> write "what would you like to do?" — read the current state first (connectors,
+> what exists, what is live), show it, then offer the next step as options, one
+> per real path.
+>
+> Each option names its consequence — "Publish now · visible immediately, no
+> undo" beats "yes" — and the one you would recommend goes first, with the
+> reason. Anything irreversible is confirmed this way, never assumed.
+>
+> **"The options don't fit the tool's format" is not a reason to fall back to
+> prose.** Discrete paths always fit. Only when the answer is genuinely
+> free-text — a caption, a search term — do you ask in words, and then ask for
+> that one thing plainly. If no such tool exists at all, use a **numbered list**,
+> one option per line.
 
 # X lists
 

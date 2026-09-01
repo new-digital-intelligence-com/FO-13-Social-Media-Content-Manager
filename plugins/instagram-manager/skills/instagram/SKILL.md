@@ -106,10 +106,18 @@ In a terminal there is no artifact viewer: answer in text.
 
 ## 6. Ask with the question form, not prose
 
-When a decision is genuinely the user's — which account, which time, which
-visibility, whether to arm an automation — use the **AskUserQuestion** tool so
-they get selectable options with the trade-offs on them, instead of a paragraph
-ending in a question mark.
+The moment you would write a sentence ending in "?" that contains options, stop
+and ask with the **tappable question tool** instead. The user clicks; they do
+not read a paragraph and retype one of its clauses.
+
+Its name differs by surface: **`ask_user_input_v0`** in the Claude app,
+**`AskUserQuestion`** in Claude Code. Use whichever is in your toolset. Not
+finding one exact name is not a reason to fall back to prose — check for the
+other, and failing both, use a numbered list.
+
+This binds on the first turn too: invoked with no request, never open with
+"what would you like to do?". Read the state — connectors, what exists, what is
+live — show it, then put the next step in the question form.
 
 - **Never ask what you can determine.** Read the queue, the settings, the
   connection state first. A question you could have answered yourself is friction.
