@@ -126,3 +126,9 @@ live — show it, then put the next step in the question form.
 - **Recommend one, and put it first**, with the reason.
 - **Anything irreversible is confirmed this way** — publishing, arming an
   automation, deleting a queued post — never assumed from context.
+- **One question at a time.** Several things missing means several forms in
+  sequence, not one numbered list of fields to answer at once.
+- **Free text still gets options.** For a keyword, a DM body or a name, draft
+  two or three candidates from what you know and offer those; the tool's
+  custom-answer path covers the rest. A blank ask hands the user work you
+  could have done.

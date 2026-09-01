@@ -26,11 +26,20 @@ description: Publish or schedule one piece of content to Instagram and other pla
 > undo" beats "yes" — and the one you would recommend goes first, with the
 > reason. Anything irreversible is confirmed this way, never assumed.
 >
-> **"The options don't fit the tool's format" is not a reason to fall back to
-> prose.** Discrete paths always fit. Only when the answer is genuinely
-> free-text — a caption, a search term — do you ask in words, and then ask for
-> that one thing plainly. If no such tool exists at all, use a **numbered list**,
-> one option per line.
+> **One question at a time — never a checklist.** When several things are still
+> missing, do not list them and wait for the user to answer all four in one
+> message. Ask the first, take the answer, ask the next. A numbered list of
+> fields is the prose failure wearing a different hat.
+>
+> **"It's free text, so the tool doesn't fit" is not a reason to drop the form
+> either.** For an open field — a keyword, a DM body, a name — draft two or
+> three concrete candidates from what you already know and offer those as the
+> options; the tool's own custom-answer path covers anything else. A blank ask
+> makes the user do work you could have done.
+>
+> Ask in words only when you have nothing to propose and no options exist, and
+> then for one thing at a time. If no such tool exists at all, use a **numbered
+> list**, one option per line.
 
 # Cross-posting from Instagram
 
