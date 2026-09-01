@@ -128,7 +128,11 @@ live — show it, then put the next step in the question form.
   automation, deleting a queued post — never assumed from context.
 - **One question at a time.** Several things missing means several forms in
   sequence, not one numbered list of fields to answer at once.
+- **Fetch before you ask.** If the answer is one of a set you can retrieve —
+  which post, which reel, which playlist, which automation — retrieve it and
+  offer the real items as options, labelled recognisably (first words of the
+  caption plus the date, never a bare id). Asking someone to paste a link you
+  could have looked up makes them leave the conversation to answer you.
 - **Free text still gets options.** For a keyword, a DM body or a name, draft
-  two or three candidates from what you know and offer those; the tool's
-  custom-answer path covers the rest. A blank ask hands the user work you
-  could have done.
+  two or three candidates and offer those; the tool's custom-answer path covers
+  the rest. A blank ask hands the user work you could have done.

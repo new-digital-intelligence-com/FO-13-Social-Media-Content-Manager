@@ -31,11 +31,20 @@ description: Find Instagram accounts to follow by topic, and understand what Ins
 > message. Ask the first, take the answer, ask the next. A numbered list of
 > fields is the prose failure wearing a different hat.
 >
+> **If the answer is one of things you can look up, look them up first.** Never
+> ask the user to paste an id, a link, or "tell me which one" for something you
+> can fetch: list the account's recent posts, its reels, its playlists, its
+> automations — whatever the question is about — and offer those as the options,
+> each labelled so it is recognisable (the caption's first words and the date,
+> not a bare id). Making the user go and find an id you could have fetched is
+> the worst version of this failure, because they have to leave the conversation
+> to answer you.
+>
 > **"It's free text, so the tool doesn't fit" is not a reason to drop the form
-> either.** For an open field — a keyword, a DM body, a name — draft two or
-> three concrete candidates from what you already know and offer those as the
-> options; the tool's own custom-answer path covers anything else. A blank ask
-> makes the user do work you could have done.
+> either.** For a genuinely open field — a keyword, a DM body, a name — draft
+> two or three concrete candidates and offer those; the tool's own custom-answer
+> path covers anything else. A blank ask makes the user do work you could have
+> done.
 >
 > Ask in words only when you have nothing to propose and no options exist, and
 > then for one thing at a time. If no such tool exists at all, use a **numbered
