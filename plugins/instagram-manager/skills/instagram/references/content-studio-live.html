@@ -1,0 +1,490 @@
+<title>Content Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+
+<!--
+  STANDALONE Content Studio.
+
+  Unlike the snapshot studio, this page has no baked-in DATA: it calls the
+  Content Studio MCP connector itself, on load and on every action. Once
+  published it works on its own - open the artifact URL and it fetches live.
+  No Claude turn is involved.
+
+  PUBLISH IT WITH:
+    capabilities: {
+      mcp: { servers: [{ server: "Content Studio", tools: [
+        "status","list_queue","schedule_post","update_scheduled_post",
+        "delete_scheduled_post","analytics","queue_slots","list_automations",
+        "create_automation","set_automation_active","delete_automation","crosspost"
+      ]}] }
+    }
+
+  SERVER must match the connector's name in claude.ai exactly. Change the
+  SERVER constant below if you named it something else.
+
+  Declaring `mcp` makes this page un-shareable publicly - it is a
+  viewer-consented grant that runs with YOUR credentials. That is the point:
+  nobody else can use your accounts through it.
+-->
+
+<style>
+  :root {
+    color-scheme: light;                 /* matches the web app, which is light-only */
+    --brand: #fe0100; --brand-ink: #c40100;
+    --ground: #f7f7f8; --surface: #fff; --ink: #101014;
+    --muted: rgba(0,0,0,.55); --faint: rgba(0,0,0,.45);
+    --hairline: rgba(0,0,0,.10); --inset: rgba(0,0,0,.03);
+    --ok-bg:#ecfdf5; --ok-ink:#047857; --ok-ring:#a7f3d0;
+    --warn-bg:#fffbeb; --warn-ink:#92400e; --warn-ring:#fde68a;
+    --bad-bg:#fef2f2; --bad-ink:#b91c1c; --bad-ring:#fecaca;
+    --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:26px 20px 72px;display:flex;flex-direction:column;gap:16px}
+  .topbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+  .brandmark{display:flex;align-items:baseline;gap:9px}
+  .dotmark{width:9px;height:9px;border-radius:50%;background:var(--brand)}
+  h1{font-size:21px;font-weight:600;letter-spacing:-.02em;margin:0}
+  .stamp{font-family:var(--mono);font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+  .conn{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:12px 14px}
+  .connectors{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .led{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none}
+  .led.on{background:#059669;box-shadow:0 0 0 3px var(--ok-bg)}
+  .led.off{border:1.5px solid var(--faint)}
+  .led.unknown{border:1.5px dashed var(--faint)}
+  .conn b{font-size:13.5px;font-weight:600}
+  .conn .does{color:var(--muted);font-size:12px;margin-top:2px}
+  .conn .st{font-family:var(--mono);font-size:10.5px;margin-top:5px}
+  .conn .st.on{color:var(--ok-ink)} .conn .st.off{color:var(--warn-ink)} .conn .st.unknown{color:var(--faint)}
+
+  .switch{display:flex;flex-wrap:wrap;gap:6px}
+  .sw{font:inherit;font-size:13px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:7px 13px;cursor:pointer}
+  .sw:hover:not(:disabled){color:var(--ink);border-color:var(--brand)}
+  .sw[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+  .sw:disabled{opacity:.45;cursor:not-allowed}
+  .sections{display:flex;flex-wrap:wrap;gap:3px;border-bottom:1px solid var(--hairline);padding-bottom:9px}
+  .sec{font:inherit;font-size:12.5px;color:var(--muted);background:none;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+  .sec:hover{background:var(--inset);color:var(--ink)}
+  .sec[aria-selected="true"]{color:var(--ink);font-weight:600;background:var(--inset)}
+  .sw:focus-visible,.sec:focus-visible,.btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+  .card{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:18px 20px}
+  .card h3{margin:0 0 3px;font-size:14.5px;font-weight:600}
+  .card .sub{color:var(--muted);font-size:12.5px;margin:0 0 13px}
+  .stack{display:flex;flex-direction:column;gap:13px}
+
+  .pill{display:inline-block;font-size:10.5px;font-weight:500;padding:2px 9px;border-radius:999px;border:1px solid;white-space:nowrap}
+  .pill.ok{background:var(--ok-bg);color:var(--ok-ink);border-color:var(--ok-ring)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-ring)}
+  .pill.bad{background:var(--bad-bg);color:var(--bad-ink);border-color:var(--bad-ring)}
+  .pill.mute{background:var(--inset);color:var(--muted);border-color:var(--hairline)}
+
+  .note,.err{border-radius:12px;padding:10px 13px;font-size:12.5px;border:1px solid;margin:0}
+  .note{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-ring)}
+  .err{background:var(--bad-bg);color:var(--bad-ink);border-color:var(--bad-ring)}
+  .empty{border:1px dashed var(--hairline);border-radius:16px;padding:32px 20px;text-align:center}
+  .empty b{font-size:14px} .empty p{margin:4px 0 0;color:var(--faint);font-size:12.5px}
+
+  .grouplabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:2px 0 1px}
+  .grouphint{color:var(--muted);font-size:12px;margin:0 0 6px}
+  .row{display:flex;gap:13px;align-items:flex-start;justify-content:space-between;padding:11px 0;border-top:1px solid var(--hairline)}
+  .row:first-of-type{border-top:none}
+  .row .cap{font-size:13px;margin:0 0 3px}
+  .row .when{font-family:var(--mono);font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .row .who{font-weight:600;font-size:13px}
+
+  .stats{display:grid;gap:15px;grid-template-columns:repeat(auto-fit,minmax(108px,1fr))}
+  .stat .n{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12px;color:var(--faint)}
+  .slot{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--inset);border-radius:9px;padding:8px 11px;font-size:12.5px}
+  .slot .t{font-weight:500;font-variant-numeric:tabular-nums}
+  .slot .c{color:var(--faint);font-size:10.5px;margin-left:7px}
+
+  textarea,input[type=text],input[type=datetime-local]{width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--hairline);border-radius:11px;padding:10px 12px}
+  textarea{resize:vertical;min-height:84px}
+  input[type=datetime-local]{width:auto}
+  label.fl{display:block;font-size:11.5px;font-weight:500;color:var(--muted);margin:10px 0 4px}
+  .counts{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .counts .over{color:var(--bad-ink);font-weight:600}
+
+  .btn{font:inherit;font-size:13px;font-weight:500;border-radius:11px;padding:7px 15px;cursor:pointer}
+  .btn.primary{background:var(--brand);color:#fff;border:1px solid var(--brand)}
+  .btn.primary:hover{background:var(--brand-ink)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--hairline)}
+  .btn.ghost:hover{border-color:var(--brand)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px;align-items:center}
+  .hint{color:var(--faint);font-size:11.5px;margin:7px 0 0}
+  .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--hairline);border-top-color:var(--brand);border-radius:50%;animation:s .7s linear infinite;vertical-align:-1px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  code{font-family:var(--mono);font-size:11.5px;background:var(--inset);padding:1px 5px;border-radius:5px}
+  footer{color:var(--faint);font-size:12px;border-top:1px solid var(--hairline);padding-top:14px}
+  [hidden]{display:none!important}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brandmark"><span class="dotmark"></span><h1>Content Studio</h1></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="stamp" id="stamp">Connecting…</span>
+      <button class="btn ghost" id="refresh" type="button">Refresh</button>
+    </div>
+  </div>
+  <div class="connectors" id="connectors"></div>
+  <div class="switch" role="tablist" id="platforms"></div>
+  <div class="sections" role="tablist" id="sections"></div>
+  <div id="body" class="stack"></div>
+  <footer>
+    Runs on its own against the Content Studio connector, with your credentials.
+    Actions here reach the real platforms.
+    <span id="build" style="float:right;font-family:var(--mono)"></span>
+  </footer>
+</div>
+
+<script>
+/* The connector's name in claude.ai. Must match exactly. */
+const SERVER = "Content Studio";
+
+/* Bump on every republish. Shown in the footer, so you can tell at a glance
+   whether the version you are looking at is the one you just published -
+   an artifact can be served from cache. */
+const BUILD = "1";
+
+const SECTIONS = {
+  instagram: ["Overview","Queue","Compose","Insights","Automation","Slots"],
+  youtube:   ["Overview","Queue","Compose","Insights","Slots"],
+};
+const LIMITS = { instagram: 2200, youtube: 5000 };
+const FOLD   = { instagram: 125 };
+
+const el=(t,c,x)=>{const n=document.createElement(t);if(c)n.className=c;if(x!=null)n.textContent=x;return n};
+const tz=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){return"your timezone"}};
+
+let mcp=null, platform="instagram", section="Overview";
+/* cache[tool+args] = {state:"idle|loading|ok|error", data, detail, code} */
+const cache = {};
+
+/* ── the one place that talks to the connector ───────────────────────────── */
+async function call(tool, args = {}) {
+  if (!mcp) throw Object.assign(new Error("No connector"), { code: "server_not_connected" });
+  const res = await mcp.callTool(SERVER, tool, args);
+  const p = res && res.payload;
+  // This server returns a text block holding JSON; parse it, but never assume.
+  const text = p && p.content && p.content[0] && p.content[0].text;
+  if (typeof text === "string") { try { return JSON.parse(text); } catch (e) { return { text }; } }
+  return p;
+}
+
+/** Each code has a different fix — collapsing them into one banner hides it. */
+function explain(e) {
+  switch (e && e.code) {
+    case "needs_reauth":         return "The connector needs re-authorizing in Settings → Connectors.";
+    case "server_not_connected": return "The Content Studio connector is not added to this account.";
+    case "rate_limited":         return "Rate limited. Wait a moment, then refresh.";
+    case "server_unavailable":
+    case "upstream_error":       return "The app did not answer. It may still have run — refresh before retrying anything that writes.";
+    case "tool_error":           return "The app rejected it: " + (e.message || "no reason given");
+    default:                     return (e && e.message) || "Failed.";
+  }
+}
+
+/** Fetch once per key, remember the outcome, re-render as it settles. */
+function load(key, tool, args) {
+  if (cache[key] && cache[key].state !== "idle") return cache[key];
+  cache[key] = { state: "loading" };
+  call(tool, args).then(
+    (data) => { cache[key] = { state: "ok", data }; render(); },
+    (e)    => { cache[key] = { state: "error", detail: explain(e), code: e && e.code }; render(); },
+  );
+  return cache[key];
+}
+const invalidate = (p) => { for (const k of Object.keys(cache)) if (k.startsWith(p)) delete cache[k]; };
+
+/* ── shared blocks ───────────────────────────────────────────────────────── */
+function card(t,s){const c=el("div","card");if(t)c.append(el("h3",null,t));if(s)c.append(el("p","sub",s));return c}
+function loading(what){const c=el("div","empty");const b=el("b");b.append(el("span","spin"),document.createTextNode("  Loading "+what+"…"));c.append(b);return c}
+function errored(what,detail){const c=card(what+" unavailable");c.append(el("p","err",detail));return c}
+function nothing(t,h){const c=el("div","empty");c.append(el("b",null,t));if(h)c.append(el("p",null,h));return c}
+
+/** Every section is one of: loading / errored / real data. Never blank. */
+function gate(entry, label, draw) {
+  if (!entry || entry.state === "loading") return loading(label);
+  if (entry.state === "error") return errored(label, entry.detail);
+  return draw(entry.data);
+}
+
+/* ── connectors ──────────────────────────────────────────────────────────── */
+function renderConnectors() {
+  const host = document.getElementById("connectors"); host.replaceChildren();
+  const st = cache["status"];
+  const add = (name, does, state, detail) => {
+    const box = el("div","conn"); box.append(el("span","led "+state));
+    const t = el("div"); t.append(el("b",null,name), el("div","does",does));
+    t.append(el("div","st "+state,
+      state==="on" ? "● Connected" : state==="off" ? "○ Not connected" : "◌ Checking…"));
+    if (detail) t.append(el("div","does",detail));
+    box.append(t); host.append(box);
+  };
+  add("Content Studio app", "This page talks to your deployment over MCP.",
+      mcp === null ? "off" : mcp ? "on" : "unknown",
+      mcp === null ? "Add the connector in Settings → Connectors." : "");
+  if (!st || st.state === "loading") { add("Providers","Composio and the scheduler.","unknown"); return; }
+  if (st.state === "error") { add("Providers", st.detail, "off"); return; }
+  const d = st.data || {};
+  add("Providers",
+      "Platform APIs, scheduling, automations and analytics.",
+      d.state === "ready" ? "on" : "off",
+      d.state === "ready" ? (d.accounts||[]).map(a=>a.platform+" "+(a.handle||"")).join(" · ") : (d.detail||""));
+}
+
+/* ── sections ────────────────────────────────────────────────────────────── */
+function secOverview() {
+  return gate(load("status","status"), "Overview", (d) => {
+    if (d.state !== "ready") return errored("Overview", d.detail || "Providers unavailable.");
+    const acc = (d.accounts||[]).find(a=>a.platform===platform);
+    const c = card("Account", acc ? acc.handle : "Not connected on this platform");
+    const g = el("div","stats");
+    const add=(l,v)=>{const b=el("div","stat");b.append(el("div","n",v==null?"—":String(v)),el("div","l",l));g.append(b)};
+    add("Platform", platform); add("Active", acc ? (acc.active?"yes":"no") : "—");
+    add("Profile", d.profileId ? d.profileId.slice(0,8)+"…" : "—");
+    c.append(g);
+    return c;
+  });
+}
+
+function secQueue() {
+  const k = "queue:"+platform;
+  return gate(load(k,"list_queue",{platform}), "Queue", (d) => {
+    if (d.available === false) return errored("Queue", d.detail || "The queue could not be read — this is not an empty queue.");
+    const posts = d.posts || [];
+    if (!posts.length) return nothing("Nothing scheduled","Draft something in Compose and give it a time.");
+    const c = card("Publishing queue","Times in "+tz());
+    const groups=[["Scheduled","These publish on their own.",p=>p.status==="scheduled"],
+                  ["Drafts","No date — these will never publish.",p=>p.status==="draft"],
+                  ["Done","Published, or failed after retries.",p=>p.status==="published"||p.status==="failed"]];
+    for (const [lab,hint,test] of groups) {
+      const rows=posts.filter(test); if(!rows.length) continue;
+      c.append(el("p","grouplabel",lab), el("p","grouphint",hint));
+      for (const p of rows) {
+        const r=el("div","row"), left=el("div");
+        left.append(el("p","cap",p.caption||"No caption"), el("span","when",when(p)));
+        const right=el("div"); right.style.cssText="display:flex;gap:8px;align-items:center";
+        const tone=p.status==="published"?"ok":p.status==="failed"?"bad":p.status==="draft"?"mute":"ok";
+        const text=p.status==="published"?"Published":p.status==="failed"?"Failed":
+                   p.status==="draft"?"Draft · will not publish":"Scheduled";
+        right.append(el("span","pill "+tone,text));
+        if (p.status!=="published") right.append(deleteBtn(p));
+        r.append(left,right); c.append(r);
+      }
+    }
+    return c;
+  });
+}
+function when(p){
+  if(!p.publishAt) return "No date";
+  const d=new Date(p.publishAt); if(isNaN(d)) return String(p.publishAt);
+  const m=Math.round((d.getTime()-Date.now())/60000);
+  const rel=m<0?"overdue":m<60?`in ${m} min`:m<1440?`in ${Math.round(m/60)} h`:`in ${Math.round(m/1440)} d`;
+  return d.toLocaleString()+" · "+rel;
+}
+function deleteBtn(p){
+  const b=el("button","btn ghost","Delete");
+  b.addEventListener("click", async ()=>{
+    if(!confirm(`Delete this post from the queue?\n\n"${(p.caption||"No caption").slice(0,80)}"\n\nIt will not publish.`)) return;
+    b.disabled=true; b.textContent="Deleting…";
+    try{ await call("delete_scheduled_post",{id:p.id}); invalidate("queue:"); render(); }
+    catch(e){ b.textContent="Failed"; alert(explain(e)); b.disabled=false; }
+  });
+  return b;
+}
+
+function secCompose() {
+  const limit=LIMITS[platform]||2200;
+  const c=card("Draft and schedule","Counted against "+platform+"'s real limit of "+limit.toLocaleString()+" characters.");
+  const ta=el("textarea"); ta.setAttribute("aria-label","Caption");
+  const counts=el("div","counts"), n=el("span"), fold=el("span"); counts.append(n,fold);
+  const tick=()=>{const L=ta.value.length;n.textContent=L.toLocaleString()+" / "+limit.toLocaleString();
+    n.className=L>limit?"over":""; const f=FOLD[platform];
+    fold.textContent=!f?"":L<=f?"all of it shows before the fold":`${(L-f).toLocaleString()} past the fold`};
+  ta.addEventListener("input",tick);
+  c.append(ta,counts);
+
+  c.append(el("label","fl","Media URL (Instagram requires one)"));
+  const media=el("input"); media.type="text"; media.placeholder="https://…"; c.append(media);
+
+  c.append(el("label","fl","Publish at — leave empty to save a draft"));
+  const at=el("input"); at.type="datetime-local"; c.append(at);
+
+  const status=el("p","hint");
+  const acts=el("div","acts");
+  const go=el("button","btn primary","Schedule it");
+  go.addEventListener("click", async ()=>{
+    const hasTime=!!at.value;
+    const msg = hasTime
+      ? `Schedule this to ${platform} for ${new Date(at.value).toLocaleString()}?\n\nIt will publish on its own. There is no unsend.`
+      : `Save this as a draft on ${platform}?\n\nIt has no date, so it will not publish.`;
+    if(!confirm(msg)) return;
+    go.disabled=true; status.textContent="Working…";
+    try{
+      const r = await call("schedule_post",{
+        platform, caption:ta.value||undefined,
+        mediaUrl:media.value||undefined,
+        publishAt:hasTime?new Date(at.value).toISOString():undefined,
+        timezone:tz(),
+      });
+      if (r && r.error) { status.textContent=r.error; }
+      else { status.textContent = hasTime ? "Scheduled." : "Saved as a draft."; ta.value=""; media.value=""; at.value="";
+             invalidate("queue:"); tick(); render(); }
+    }catch(e){ status.textContent=explain(e); }
+    finally{ go.disabled=false; }
+  });
+  acts.append(go); c.append(acts,status);
+  c.append(el("p","hint","This publishes through your own connector — it reaches the real account."));
+  setTimeout(tick,0);
+  return c;
+}
+
+function secInsights() {
+  const k="best:"+platform;
+  return gate(load(k,"analytics",{metric:"best-time",platform}), "Insights", (d) => {
+    if (d && d.error) return errored("Insights", d.error);
+    const slots=(d && d.slots)||[];
+    const c=card("Best times to post","Measured from your own engagement, converted to "+tz()+".");
+    if(!slots.length){c.append(el("p","sub","No published posts with engagement yet, so there is nothing to measure."));return c}
+    // The provider returns UTC hours with day_of_week 0=Monday.
+    const local=slots.map(s=>{const dt=new Date(Date.UTC(2024,0,1+s.day_of_week,s.hour));
+      return {...s,d:dt.getDay(),h:dt.getHours()}}).sort((a,b)=>b.avg_engagement-a.avg_engagement);
+    if(local.every(s=>(s.post_count||0)<3)){
+      const w=el("p","note","Every slot rests on fewer than 3 posts. That is raw data, not a recommendation.");
+      w.style.marginBottom="10px"; c.append(w);
+    }
+    const D=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const list=el("div"); list.style.cssText="display:flex;flex-direction:column;gap:6px";
+    for(const s of local.slice(0,6)){
+      const row=el("div","slot");
+      row.append(el("span","t",D[(s.d+6)%7]+" "+String(s.h).padStart(2,"0")+":00"));
+      const v=el("span"); v.append(document.createTextNode((s.avg_engagement??"—")+" avg engagement"));
+      v.append(el("span","c",(s.post_count||0)+" post"+(s.post_count===1?"":"s")));
+      row.append(v); list.append(row);
+    }
+    c.append(list);
+    return c;
+  });
+}
+
+function secAutomation() {
+  return gate(load("autos","list_automations"), "Automations", (d) => {
+    if (d && d.error) return errored("Automations", d.error);
+    const items=(d && (d.automations||d.items))||[];
+    if(!items.length) return nothing("No automations","A keyword in the comments can trigger a DM automatically.");
+    const c=card("Comment-to-DM","An armed rule messages real people, unattended, until it is switched off.");
+    for(const a of items){
+      const r=el("div","row"), left=el("div");
+      left.append(el("div","who",a.name||"Untitled"));
+      left.append(el("span","when",`Keywords: ${(a.keywords||[]).join(", ")||"—"} · ${a.platformPostId?"one post":"account-wide"}`));
+      if(a.stats) {const s=el("p","when",`${a.stats.delivered||0} delivered · ${a.stats.read||0} read · ${a.stats.clicks||0} clicks`);s.style.marginTop="3px";left.append(s)}
+      const right=el("div"); right.style.cssText="display:flex;gap:8px;align-items:center";
+      right.append(el("span","pill "+(a.isActive?"ok":"mute"), a.isActive?"Live · sending DMs":"Off"));
+      const t=el("button","btn ghost", a.isActive?"Turn off":"Turn on");
+      t.addEventListener("click", async ()=>{
+        if(!a.isActive && !confirm(
+          `Turn this automation on?\n\nEveryone who comments ${(a.keywords||[]).map(k=>`"${k}"`).join(", ")} `+
+          `${a.platformPostId?"on that post":"on ANY post on the account"} will be DMed automatically, until you turn it off.`
+        )) return;
+        t.disabled=true;
+        try{ await call("set_automation_active",{id:a._id||a.id,isActive:!a.isActive}); invalidate("autos"); render(); }
+        catch(e){ alert(explain(e)); t.disabled=false; }
+      });
+      right.append(t);
+      r.append(left,right); c.append(r);
+    }
+    return c;
+  });
+}
+
+function secSlots() {
+  return gate(load("slots","queue_slots",{action:"list"}), "Slots", (d) => {
+    if (d && d.error) return errored("Slots", d.error);
+    const c=card("Recurring posting slots","Without slots, a post needs an explicit date and time.");
+    const queues=(d && (d.queues||d.data&&d.data.queues))||[];
+    if(!queues.length){
+      c.append(el("p","note","No slots configured, so nothing can go to a “next free slot” yet."));
+      return c;
+    }
+    c.append(el("p","sub",queues.length+" schedule"+(queues.length===1?"":"s")+" configured."));
+    const pre=el("pre"); pre.style.cssText="white-space:pre-wrap;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin:0";
+    pre.textContent=JSON.stringify(queues,null,2).slice(0,1200);
+    c.append(pre);
+    return c;
+  });
+}
+
+/* ── chrome ──────────────────────────────────────────────────────────────── */
+function renderPlatforms(){
+  const host=document.getElementById("platforms"); host.replaceChildren();
+  const st=cache["status"];
+  const live=(st&&st.state==="ok"&&st.data&&st.data.accounts)||[];
+  for(const id of ["instagram","youtube"]){
+    const acc=live.find(a=>a.platform===id);
+          const b=el("button","sw", acc&&acc.handle ? id[0].toUpperCase()+id.slice(1)+" · "+acc.handle : id[0].toUpperCase()+id.slice(1));
+    b.setAttribute("role","tab"); b.setAttribute("aria-selected",String(id===platform));
+    if(st&&st.state==="ok"&&!acc) b.disabled=true;
+    b.addEventListener("click",()=>{platform=id;section=SECTIONS[id][0];render()});
+    host.append(b);
+  }
+}
+function renderSections(){
+  const host=document.getElementById("sections"); host.replaceChildren();
+  const names=SECTIONS[platform]||[];
+  if(!names.includes(section)) section=names[0];
+  for(const s of names){
+    const b=el("button","sec",s); b.setAttribute("role","tab");
+    b.setAttribute("aria-selected",String(s===section));
+    b.addEventListener("click",()=>{section=s;render()});
+    host.append(b);
+  }
+}
+
+function render(){
+  renderConnectors(); renderPlatforms(); renderSections();
+  const st=cache["status"];
+  document.getElementById("stamp").textContent =
+    mcp===null ? "Connector unavailable"
+    : !st||st.state==="loading" ? "Loading…"
+    : st.state==="error" ? "Error"
+    : "Live";
+  const body=document.getElementById("body"); body.replaceChildren();
+
+  if(mcp===null){
+    const c=card("Not connected to the Content Studio app");
+    c.append(el("p","sub",
+      "This page runs against the Content Studio connector. Add it in Settings → Connectors, then reload."));
+    body.append(c); return;
+  }
+  const draw={Overview:secOverview,Queue:secQueue,Compose:secCompose,
+              Insights:secInsights,Automation:secAutomation,Slots:secSlots}[section];
+  body.append(draw ? draw() : nothing("Unknown section"));
+}
+
+document.getElementById("refresh").addEventListener("click",()=>{
+  for(const k of Object.keys(cache)) delete cache[k];
+  render();
+});
+
+document.getElementById("build").textContent = "build " + BUILD;
+
+/* Render immediately, then light up when the capability resolves. It never
+   resolves during this first synchronous run, and may resolve null. */
+render();
+(async () => {
+  try { mcp = await window.claude?.use?.("mcp"); }
+  catch (e) { mcp = null; }
+  if (mcp === undefined) mcp = null;
+  render();
+})();
+</script>

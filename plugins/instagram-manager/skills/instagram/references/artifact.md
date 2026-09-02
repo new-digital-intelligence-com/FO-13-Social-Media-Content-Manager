@@ -124,6 +124,32 @@ It does **not** call anything. Its action is "Copy for Claude" — text comes ba
 to you and you perform it. Never label a control "Publish", and never let the
 page imply something reached a platform.
 
+## The standalone live studio
+
+[`content-studio-live.html`](content-studio-live.html) beside this file is the
+**always-on** variant: it has no baked-in `DATA` and calls the Content Studio
+MCP connector itself, on load and on every action. Published once, it works
+without Claude — the user opens the artifact URL and it fetches live.
+
+Publish it with the full tools manifest:
+
+```
+capabilities: { mcp: { servers: [{ server: "Content Studio", tools: [
+  "status","list_queue","schedule_post","update_scheduled_post",
+  "delete_scheduled_post","analytics","queue_slots","list_automations",
+  "create_automation","set_automation_active","delete_automation","crosspost"
+]}] } }
+```
+
+**`capabilities` is a full-set declaration.** Restating it with only a new tool
+silently revokes the rest, and half the page stops working. Paste the whole list
+plus the addition, every time. Omit `capabilities` entirely to carry the stored
+grant forward unchanged.
+
+Updating it: republish to the **same URL** (pass the artifact's `url`), and bump
+the `BUILD` constant so the footer shows whether the new version actually
+loaded — artifacts can serve from cache.
+
 ## Turning on live actions
 
 The page can call the viewer's connectors itself, so a button queues a post or
