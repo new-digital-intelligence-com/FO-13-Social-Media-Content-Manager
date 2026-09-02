@@ -1,0 +1,111 @@
+<title>Artifact Probe</title>
+<style>
+  :root { color-scheme: light; --ink:#101014; --muted:rgba(0,0,0,.55);
+    --hairline:rgba(0,0,0,.12); --ok:#047857; --bad:#b91c1c; --warn:#92400e;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace; }
+  body{background:#f7f7f8;color:var(--ink);font-family:ui-sans-serif,system-ui,sans-serif;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 60px}
+  h1{font-size:20px;margin:0 0 4px}
+  p.sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .t{background:#fff;border:1px solid var(--hairline);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+  .t b{font-size:13.5px;display:block}
+  .t .r{font-family:var(--mono);font-size:12px;margin-top:6px;white-space:pre-wrap;word-break:break-word}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .verdict{border:1px solid var(--hairline);border-radius:14px;padding:16px;background:#fff;margin-top:18px}
+  .verdict h2{font-size:15px;margin:0 0 8px}
+  code{font-family:var(--mono);font-size:12px;background:rgba(0,0,0,.04);padding:1px 5px;border-radius:5px}
+</style>
+
+<div class="wrap">
+  <h1>Artifact Probe</h1>
+  <p class="sub">
+    Four checks. This answers what an artifact on <em>your</em> account is
+    actually allowed to do — rather than what the docs imply.
+  </p>
+  <div id="out"></div>
+  <div class="verdict" id="verdict"><h2>Verdict</h2><div id="v">Running…</div></div>
+</div>
+
+<script>
+const API = "https://fo-13-social-media-content-manager-seven.vercel.app";
+const out = document.getElementById("out");
+const results = {};
+
+function test(name, detail) {
+  const d = document.createElement("div"); d.className = "t";
+  const b = document.createElement("b"); b.textContent = name;
+  const r = document.createElement("div"); r.className = "r"; r.textContent = "…";
+  d.append(b, r);
+  if (detail) { const s = document.createElement("div");
+    s.style.cssText = "color:var(--muted);font-size:12px;margin-top:2px"; s.textContent = detail; d.insertBefore(s, r); }
+  out.append(d);
+  return (cls, text) => { r.className = "r " + cls; r.textContent = text; };
+}
+
+(async () => {
+  // 1. Which artifact runtime is this? Chat artifacts expose a flat window.claude
+  //    with no use(); capability artifacts expose use() and nothing else.
+  const t1 = test("window.claude", "Which runtime this page is in.");
+  const c = window.claude;
+  const keys = c ? Object.keys(c).concat(
+    ["use","complete"].filter(k => typeof c[k] === "function" && !Object.keys(c).includes(k))) : [];
+  results.claude = !!c;
+  results.use = !!(c && typeof c.use === "function");
+  t1(c ? "ok" : "bad",
+     c ? "present — members: " + (keys.length ? keys.join(", ") : "(none enumerable)")
+       : "absent — no Claude runtime on this page at all");
+
+  // 2. The capability gate. null is a legitimate answer, not an error.
+  const t2 = test("claude.use(\"mcp\")", "Whether connector access was granted at publish time.");
+  if (!results.use) { results.mcp = false; t2("bad", "use() is not a function — this is a chat artifact, which has no capabilities"); }
+  else {
+    try {
+      const mcp = await c.use("mcp");
+      results.mcp = !!mcp;
+      t2(mcp ? "ok" : "bad", mcp ? "granted — connector calls are possible" : "resolved null — no mcp grant on this artifact");
+    } catch (e) { results.mcp = false; t2("bad", "threw: " + (e && e.message)); }
+  }
+
+  // 3. THE decisive one: can the page reach the deployed API from the browser?
+  //    If yes, the whole MCP route is unnecessary.
+  const t3 = test("fetch → your API", "GET " + API + "/api/status");
+  try {
+    const res = await fetch(API + "/api/status", { method: "GET" });
+    const body = await res.text();
+    results.fetch = res.ok;
+    t3(res.ok ? "ok" : "warn",
+       "HTTP " + res.status + " — " + body.slice(0, 160) + (body.length > 160 ? "…" : ""));
+  } catch (e) {
+    results.fetch = false;
+    t3("bad", "blocked: " + (e && e.message) +
+       "\n(a CSP block and a CORS block both surface as a generic TypeError here)");
+  }
+
+  // 4. Same-origin control. If this also fails, fetch is off entirely rather
+  //    than the external host being the problem.
+  const t4 = test("fetch → same origin", "Control, to tell a host restriction from a blanket fetch block.");
+  try {
+    const res = await fetch(location.href, { method: "GET" });
+    results.self = res.ok;
+    t4(res.ok ? "ok" : "warn", "HTTP " + res.status);
+  } catch (e) { results.self = false; t4("bad", "blocked: " + (e && e.message)); }
+
+  const v = document.getElementById("v");
+  const line = (cls, text) => { const p = document.createElement("p");
+    p.className = cls; p.style.margin = "6px 0"; p.textContent = text; v.append(p); };
+  v.textContent = "";
+  if (results.fetch) {
+    line("ok", "✓ This page CAN call your API directly.");
+    line("", "So the studio does not need MCP at all — it can be rewritten to fetch your REST API, and everything will work.");
+  } else if (results.mcp) {
+    line("ok", "✓ MCP is granted, even though direct fetch is blocked.");
+    line("", "The connector route works; the studio should run as built.");
+  } else if (results.self) {
+    line("warn", "~ fetch works, but only same-origin.");
+    line("", "External hosts are blocked. Neither route is open from this page.");
+  } else {
+    line("bad", "✗ No route out: no MCP grant, and fetch is blocked entirely.");
+    line("", "An artifact on this account cannot reach your deployment by any means. Use the app at its own URL.");
+  }
+})();
+</script>
