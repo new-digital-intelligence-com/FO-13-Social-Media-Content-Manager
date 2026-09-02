@@ -124,6 +124,29 @@ It does **not** call anything. Its action is "Copy for Claude" — text comes ba
 to you and you perform it. Never label a control "Publish", and never let the
 page imply something reached a platform.
 
+## Before reaching for Live mode: check the surface
+
+**Measured on a real account (Sept 2026), not inferred from docs.** Publish
+`standalone/artifact-probe.html` and read its verdict before assuming anything
+below is available.
+
+On a **chat-artifact** surface — which is what claude.ai and the desktop app
+produced when tested — the page gets a flat `window.claude` exposing only
+`complete`. There is:
+
+- **no `claude.use()`**, so no capabilities at all — `mcp`, `sample`, `artifact`
+  and the rest simply do not exist;
+- **no network**, and not merely no cross-origin network: `fetch` to the page's
+  own URL is blocked too.
+
+So on that surface a page **cannot reach any backend by any route**. Live mode,
+the `mcp` capability and the Ask AI tab are all unavailable, and no publish-time
+argument changes it. Snapshot is the only mode that works — which is fine,
+because a snapshot needs no network: you fetch the data and bake it in.
+
+Do not spend turns trying to publish a live page on a surface whose probe says
+"no route out". Point the user at the deployed web app for live actions instead.
+
 ## Turning on live actions
 
 The page can call the viewer's connectors itself, so a button queues a post or
