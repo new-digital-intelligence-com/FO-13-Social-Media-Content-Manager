@@ -142,12 +142,18 @@
   <footer>
     Runs on its own against the Content Studio connector, with your credentials.
     Actions here reach the real platforms.
+    <span id="build" style="float:right;font-family:var(--mono)"></span>
   </footer>
 </div>
 
 <script>
 /* The connector's name in claude.ai. Must match exactly. */
 const SERVER = "Content Studio";
+
+/* Bump on every republish. Shown in the footer, so you can tell at a glance
+   whether the version you are looking at is the one you just published -
+   an artifact can be served from cache. */
+const BUILD = "1";
 
 const SECTIONS = {
   instagram: ["Overview","Queue","Compose","Insights","Automation","Slots"],
@@ -469,6 +475,8 @@ document.getElementById("refresh").addEventListener("click",()=>{
   for(const k of Object.keys(cache)) delete cache[k];
   render();
 });
+
+document.getElementById("build").textContent = "build " + BUILD;
 
 /* Render immediately, then light up when the capability resolves. It never
    resolves during this first synchronous run, and may resolve null. */
