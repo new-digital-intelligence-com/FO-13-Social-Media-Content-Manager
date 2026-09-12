@@ -1,6 +1,6 @@
 ---
 name: youtube-publishing
-description: Upload videos to YouTube and manage their metadata - titles, descriptions, tags, thumbnails, privacy and categories. Use when the user wants to upload, publish, schedule, retitle, rewrite a description, change a thumbnail, or delete a video.
+description: Upload videos to YouTube and manage their metadata - titles, descriptions, tags, thumbnails, privacy and categories. Use when the user wants to upload, publish, schedule, retitle, rewrite a description, change a thumbnail, or delete a video. Also triggers on "edit thumbnail", "set thumbnail", "sync thumbnail", "add thumbnail" followed by an NDI AI employee code (GP-02, FO-13, DR-20), a YouTube link or video id, or a video title.
 ---
 
 > **In the Claude app, render this into the Content Studio artifact.** There is
@@ -127,9 +127,96 @@ verdict, and a warning when the two disagree.
 or category. Warn the user before rewriting the title or description of a video
 that is performing — it can disturb its search and suggested placement.
 
-`YOUTUBE_UPDATE_THUMBNAIL` replaces the custom thumbnail. This requires a
-verified channel; on an unverified one it fails with a permissions error that
-looks like a scope problem but is not.
+## Thumbnails
+
+`YOUTUBE_UPDATE_THUMBNAIL` takes `videoId` and `thumbnailUrl`. It changes
+nothing else — not the title, description, tags, privacy or the video file.
+It cannot delete anything. Say so plainly when a user asks what it touches.
+
+Requires a verified channel. On an unverified one it fails with a permissions
+error that reads like a scope problem but is not.
+
+### Syncing a thumbnail from the NDI Drive library
+
+Triggered by "edit thumbnail GP-02", a YouTube link, a video id, or a title.
+
+Master artwork lives in Drive folder `1N4byBTVARlI4CJEF-Ys-Rf7qPQK7y5xe`,
+split into eight category subfolders (DO, DR, FO, GP, KT, PA, SD, UO). Files
+are named `NDI_<CODE>_<Name>_Thumbnail.png`. One thumbnail per AI employee.
+
+**1. Resolve the video.** Match on the `[XX-NN]` code in the video title, not
+on fuzzy text — titles are coded, so matching is exact. Normalise first:
+`[DO 07]`, `[DO -04]`, `[UO-4]` and `DO 24 ...` all appear. Use
+`\[?\b([A-Z]{2})\s*-?\s*(\d{1,2})\b\]?` and zero-pad the number.
+
+**2. Get a public URL.** YouTube only accepts a publicly reachable image URL —
+there is no file-upload path. Call `GOOGLEDRIVE_DOWNLOAD_FILE` with the Drive
+file id and use `data.downloaded_file_content.s3url`. That URL is public and
+valid for one hour, so nothing in the user's Drive is shared or made public.
+Never make Drive files public to solve this, and never base64 a 1.5 MB PNG
+through the conversation.
+
+**3. Push, then verify.** Details below.
+
+### Hard limits, learned the hard way
+
+**2 MB cap.** YouTube rejects anything larger outright. Some NDI masters
+exceed it (DO-01 is 2.34 MB). Compress via Cloudinary rather than skipping:
+upload the s3url with `transformation: "w_1280,h_720,c_fill,q_auto:good,f_jpg"`
+and push the resulting `secure_url`. Tell the user the Drive original is still
+oversized so it fails again next time.
+
+**Rate limit.** The endpoint throttles hard per channel. Sequential with a
+~7-8 second gap is safe. Running it 8-wide in parallel triggers a 429 that
+locks the whole channel out for roughly an hour, and the API keeps returning
+429 even for single requests during that window. Never parallelise this.
+On a 429, stop and wait — do not retry in a loop.
+
+**Quota.** Uploads cost ~1,600 units against a 10,000/day default (~6 uploads
+a day). Thumbnail sets are far cheaper but not free.
+
+### Verifying — do not trust the API response
+
+A `thumbnailSetResponse` proves the request was accepted, not that the image
+changed. Checking that `maxres` exists proves nothing either: YouTube
+auto-generates a 1280x720 frame for every HD upload, so that check passes on
+videos that have no custom thumbnail at all.
+
+Verify by comparing the served image against the Drive source. Fetch
+`https://i.ytimg.com/vi/<videoId>/mqdefault.jpg`, compute a perceptual hash of
+both (16x16 greyscale, threshold at the mean, Hamming distance), and compare.
+A genuine match scores 0-6. Two *different* NDI thumbnails score ~40, because
+they share a template — so a distance near 40 means the wrong image, not a
+near miss.
+
+Allow ~20 seconds after the push before comparing. If it still differs two
+hours later, it is not CDN caching: report it as stuck and send the user to
+Studio rather than pushing a third time. FO-13 behaves this way — the API
+returns success and the served bytes never change.
+
+### When to stop and ask
+
+**Two videos, one code.** DO-07, FO-13 and GP-05 each have a main video plus a
+demo or re-upload. There is only one master per employee, so push the same
+thumbnail to both. Not an error.
+
+**Code and title disagree.** If the `[XX-NN]` code points at one employee and
+the title names another, do not guess — the wrong artwork is worse than none.
+Check the video description first, which often settles it, then ask. Live
+examples: `[UO-15] VC Funding Finder` (UO-15 is Investment Target Scout; VC
+Funding is UO-14) and `[UO-4] Recruiter Assistant Demo English` (UO-04 is
+Executive Recruiter; plain Recruiter is UO-03).
+
+**No code in the title.** Intro videos, podcasts, event talks and the named
+agent demos have no code and no thumbnail. Skip them silently.
+
+### Catalog cross-check
+
+The authoritative employee list is the Drive sheet **NDI AI Employee
+Architecture Details** (`1V2leyAdTrtIirMeXssLdbZEdGEkHZEOBd4dp_EwmjlI`): 123
+IDs with name, priority and maturity. Use it to confirm a code maps to the
+employee the user means, and to answer coverage questions. Note GP-13 does
+not exist — the gap is intentional.
 
 ## Scheduling
 
