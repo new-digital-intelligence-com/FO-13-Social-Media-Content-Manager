@@ -136,6 +136,44 @@ It cannot delete anything. Say so plainly when a user asks what it touches.
 Requires a verified channel. On an unverified one it fails with a permissions
 error that reads like a scope problem but is not.
 
+### Preflight — two connections, not one
+
+This procedure needs **two** Composio account connections, not just YouTube:
+
+- **youtube** — the channel itself. If missing, see
+  [youtube-setup](../youtube-setup/SKILL.md).
+- **googledrive — the Composio toolkit specifically.** Required to read the
+  master artwork. Nothing else in this toolkit needs it, so it is routinely
+  absent even when YouTube works fine.
+
+**A native Claude Google Drive connector is not a substitute.** This is the
+trap: Drive looks connected, matching works, and the run stalls at the push.
+Only Composio's `GOOGLEDRIVE_DOWNLOAD_FILE` returns an `s3url` — a signed,
+publicly-fetchable link that YouTube can pull from. The Claude connector's
+`download_file_content` returns base64 into the conversation: no URL for
+YouTube to fetch, and ~2 MB of text per image, which is unusable across a
+batch. Its `share_file` does not close the gap either — it shares with named
+email addresses, not "anyone with link".
+
+Both can coexist, and the Claude connector is the better tool for *finding*
+things: richer search syntax, and it reads Google Sheets natively (useful for
+the catalog cross-check below). Use it to browse; use Composio to fetch.
+
+- **cloudinary — recommended, not required.** Only used to shrink masters over
+  YouTube's 2 MB cap. Rare (1 file in 72 on the NDI channel) but it *will*
+  recur, so raise it once at preflight rather than mid-batch: if it is missing,
+  say in one line that oversized files will be skipped without it, offer the
+  connection, and **carry on either way**. Never block a sync on it.
+
+Check these before starting, with `COMPOSIO_MANAGE_CONNECTIONS`
+(`action: "list"`). Connect what is missing and wait for ACTIVE before the
+first push. Two notes on that tool: `action: "list"` on an unconnected toolkit
+creates an empty pending stub as a side effect, and auth links expire in ten
+minutes — generate a fresh one rather than resending an old one.
+
+Do not begin pushing until both report ACTIVE. A half-connected run fails
+partway and leaves the batch in an unclear state.
+
 ### Syncing a thumbnail from the NDI Drive library
 
 Triggered by "edit thumbnail GP-02", a YouTube link, a video id, or a title.
@@ -160,11 +198,20 @@ through the conversation.
 
 ### Hard limits, learned the hard way
 
-**2 MB cap.** YouTube rejects anything larger outright. Some NDI masters
-exceed it (DO-01 is 2.34 MB). Compress via Cloudinary rather than skipping:
-upload the s3url with `transformation: "w_1280,h_720,c_fill,q_auto:good,f_jpg"`
-and push the resulting `secure_url`. Tell the user the Drive original is still
-oversized so it fails again next time.
+**2 MB cap.** YouTube rejects anything larger outright, with a clear error.
+Some NDI masters exceed it (DO-01 is 2.34 MB).
+
+With Cloudinary connected: upload the s3url with
+`transformation: "w_1280,h_720,c_fill,q_auto:good,f_jpg"` and push the
+resulting `secure_url`. That took DO-01 from 2.34 MB to 190 KB at 1280x720.
+
+Without it: **skip that file and say so.** Do not resize into the user's Drive
+folder to work around it — writing derived files beside their masters is a
+side effect they did not ask for.
+
+Either way, the compression is a patch, not a fix: the Drive master is still
+oversized and will fail on every future sync. Always name the file and say it
+needs re-exporting at source.
 
 **Rate limit.** The endpoint throttles hard per channel. Sequential with a
 ~7-8 second gap is safe. Running it 8-wide in parallel triggers a 429 that
