@@ -7,6 +7,10 @@
     "zernio": {
       "type": "http",
       "url": "https://mcp.zernio.com/mcp"
+    },
+    "cloudinary": {
+      "type": "http",
+      "url": "https://asset-management.mcp.cloudinary.com/sse"
     }
   }
 }
