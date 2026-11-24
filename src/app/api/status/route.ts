@@ -129,11 +129,17 @@ function accountMismatches(
     if (!z || p.state !== "connected") return [];
 
     // Compare ids, never display names. Composio reports YouTube's *title*
-    // ("Samir Sellimix") while Zernio reports its *handle*
-    // ("@samirsellimi-f7d") — the same channel, so a name comparison raises a
+    // ("Example Channel") while Zernio reports its *handle*
+    // ("@examplechannel-1a2") — the same channel, so a name comparison raises a
     // false alarm. Only the platform's own id identifies an account.
     if (!p.accountId || !z.platformUserId) return [];
     if (p.accountId === z.platformUserId) return [];
+
+    // Ids can still differ for the same account: Instagram Login issues
+    // app-scoped ids, so Composio's app and Zernio's app each see their own id.
+    // A handle is unique on the platform, so equal handles are the same account.
+    const norm = (h?: string) => h?.replace(/^@/, "").toLowerCase();
+    if (norm(p.handle) && norm(p.handle) === norm(z.handle)) return [];
 
     return [
       {
